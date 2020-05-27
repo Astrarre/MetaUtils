@@ -1,2 +1,3 @@
 rootProject.name = 'MetaUtils'
 
+//include "buildTools"
