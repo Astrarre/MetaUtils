@@ -33,7 +33,7 @@ open class GitPushTask : DefaultTask() {
 
     @TaskAction
     fun doTask() {
-        require(::commitMessage.isInitialized)
+        require(::commitMessage.isInitialized) { "A commit message must be specified via '--message \"<message>\"'." }
         val metaUtilsDir = File("MetaUtils")
         runCommand("git add .", workingDirectory = metaUtilsDir)
         runCommand("git commit -m \"$commitMessage\"", workingDirectory = metaUtilsDir)
@@ -61,7 +61,7 @@ private fun runCommand(command: String, workingDirectory: File? = null) {
 open class BuildMetaUtilsExtension(private val project: Project) {
     fun createJarTest(name: String): SourceSet = with(project) {
         val sourceSet = sourceSets.create(name)
-        tasks.create(name, Jar::class.java) { task ->
+        val jarTask = tasks.create(name, Jar::class.java) { task ->
             group = "testing"
             task.from(sourceSet.output)
 
@@ -70,8 +70,7 @@ open class BuildMetaUtilsExtension(private val project: Project) {
         }
 
         tasks.named("processTestResources") { task ->
-            task.dependsOn(sourceSet.classesTaskName)
-            task.dependsOn(sourceSet.processResourcesTaskName)
+            task.dependsOn(jarTask)
         }
 
         return@with sourceSet
