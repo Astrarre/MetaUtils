@@ -49,13 +49,18 @@ open class GitPushTask : DefaultTask() {
 
 private fun runCommand(command: String, workingDirectory: File? = null) {
     println("> $command")
-    ProcessBuilder(*command.split(" ").toTypedArray())
+    val parts = command.split("\\s".toRegex())
+    val proc = ProcessBuilder(*parts.toTypedArray())
         .directory(workingDirectory)
-        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-        .redirectError(ProcessBuilder.Redirect.INHERIT)
+        .redirectOutput(ProcessBuilder.Redirect.PIPE)
+        .redirectError(ProcessBuilder.Redirect.PIPE)
         .start()
-        .waitFor(60, TimeUnit.MINUTES)
+
+    proc.waitFor(60, TimeUnit.MINUTES)
+    val result = proc.inputStream.bufferedReader().readText()
+    println(result)
 }
+
 
 
 open class BuildMetaUtilsExtension(private val project: Project) {
