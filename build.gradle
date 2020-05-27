@@ -13,6 +13,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation 'org.ow2.asm:asm-tree:8.0.1'
     implementation("org.ow2.asm:asm:8.0.1")
+
+    implementation 'com.squareup:javapoet:1.12.1'
 }
 
 compileKotlin {
