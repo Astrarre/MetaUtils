@@ -4,9 +4,6 @@ import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.kotlin.dsl.get
-import org.gradle.kotlin.dsl.the
-
 
 class MetaUtils : Plugin<Project> {
     override fun apply(project: Project) {
@@ -18,16 +15,17 @@ class MetaUtils : Plugin<Project> {
 open class BuildMetaUtilsExtension(private val project: Project) {
     fun createJarTest(name: String): SourceSet = with(project) {
         val sourceSet = sourceSets.create(name)
-        tasks.create(name, Jar::class.java) {
+        tasks.create(name, Jar::class.java) { task ->
             group = "testing"
-            from(sourceSet.output)
+            task.from(sourceSet.output)
 
-            destinationDirectory.set(sourceSets["test"].resources.srcDirs.first())
-            archiveFileName.set("$name.jar")
+            task.destinationDirectory.set(sourceSets.getByName("test").resources.srcDirs.first())
+            task.archiveFileName.set("$name.jar")
         }
 
-        tasks.named("processTestResources") {
-            dependsOn(sourceSet)
+        tasks.named("processTestResources") { task ->
+            task.dependsOn(sourceSet.classesTaskName)
+            task.dependsOn(sourceSet.processResourcesTaskName)
         }
 
         return@with sourceSet
@@ -35,4 +33,4 @@ open class BuildMetaUtilsExtension(private val project: Project) {
 }
 
 private val Project.sourceSets: SourceSetContainer
-    get() = the<JavaPluginConvention>().sourceSets
+    get() = convention.getPlugin(JavaPluginConvention::class.java).sourceSets
