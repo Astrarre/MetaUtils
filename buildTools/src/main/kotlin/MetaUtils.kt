@@ -14,51 +14,7 @@ import java.util.concurrent.TimeUnit
 class MetaUtils : Plugin<Project> {
     override fun apply(project: Project) {
         project.extensions.create("metaUtils", BuildMetaUtilsExtension::class.java, project)
-
-        project.tasks.create("push", GitPushTask::class.java)
     }
-}
-
-open class GitPushTask : DefaultTask() {
-    private lateinit var commitMessage: String
-
-    init {
-        group = "git"
-    }
-
-    @Option(option = "message", description = "Commit Message")
-    fun setCommitMessage(commitMessage: String) {
-        this.commitMessage = commitMessage
-    }
-
-    @TaskAction
-    fun doTask() {
-        require(::commitMessage.isInitialized) { "A commit message must be specified via '--message \"<message>\"'." }
-        val metaUtilsDir = File("MetaUtils")
-        runCommand("git add .", workingDirectory = metaUtilsDir)
-        runCommand("git commit -m \"$commitMessage\"", workingDirectory = metaUtilsDir)
-        runCommand("git push", workingDirectory = metaUtilsDir)
-//        runCommand("git submodule update --remote")
-//        runCommand("git add .")
-//        runCommand("git commit -m \"$commitMessage\"")
-//        runCommand("git push")
-    }
-
-
-}
-
-private fun runCommand(command: String, workingDirectory: File? = null) {
-    println("> $command")
-    val parts = command.split("\\s".toRegex())
-    val proc = ProcessBuilder(*parts.toTypedArray())
-        .directory(workingDirectory)
-        .redirectOutput(ProcessBuilder.Redirect.PIPE)
-        .redirectError(ProcessBuilder.Redirect.PIPE)
-        .start()
-
-    proc.waitFor(60, TimeUnit.MINUTES)
-    val result = proc.inputStream.bufferedReader().readText()
-    println(result)
 }
 
 
