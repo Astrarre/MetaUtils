@@ -38,10 +38,10 @@ open class GitPushTask : DefaultTask() {
         runCommand("git add .", workingDirectory = metaUtilsDir)
         runCommand("git commit -m \"$commitMessage\"", workingDirectory = metaUtilsDir)
         runCommand("git push", workingDirectory = metaUtilsDir)
-        runCommand("git submodule update --remote")
-        runCommand("git add .")
-        runCommand("git commit -m \"$commitMessage\"")
-        runCommand("git push")
+//        runCommand("git submodule update --remote")
+//        runCommand("git add .")
+//        runCommand("git commit -m \"$commitMessage\"")
+//        runCommand("git push")
     }
 
 
