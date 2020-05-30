@@ -13,16 +13,14 @@ import sun.reflect.generics.parser.SignatureParser
 import walkJar
 import java.nio.file.Path
 
-//TODO: adjust for crane
 fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
     require(jarPath.toString().endsWith(".jar")) { "Specified path $jarPath does not point to a jar" }
 
     //TODO: inner classes
-    return jarPath.walkJar().filter { it.isClassfile() }.map { readSingularClass(it) }.toList()
+    return jarPath.walkJar { files -> files.filter { it.isClassfile() }.map { readSingularClass(it) }.toList() }
 }
 
 private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
-    val signatureParser = SignatureParser.make()
     val classNode = readToClassNode(classPath)
     val methods = classNode.methods.map { method ->
         val descriptor = MethodDescriptor.read(method.desc)
@@ -36,12 +34,12 @@ private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
             name = method.name, descriptor = descriptor, static = method.isStatic,
             parameterNames = nonThisLocals.take(descriptor.parameterDescriptors.size).map { it.name },
             visibility = method.visibility,
-            signature = method.signature?.let { signatureParser.parseMethodSig(it) }
+            signature = method.signature?.let { SignatureParser.make().parseMethodSig(it) }
         )
     }
     val fields = classNode.fields.map { field ->
         ClassApi.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility,
-            signature = field.signature?.let { signatureParser.parseTypeSig(it) }
+            signature = field.signature?.let { SignatureParser.make().parseTypeSig(it) }
         )
     }
 
@@ -64,6 +62,6 @@ private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
             }
         },
         visibility = classNode.visibility,
-        signature = classNode.signature?.let { signatureParser.parseClassSig(it) }
+        signature = classNode.signature?.let { SignatureParser.make().parseClassSig(it) }
     )
 }
