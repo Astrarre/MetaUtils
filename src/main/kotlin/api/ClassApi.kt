@@ -5,27 +5,30 @@ import descriptor.Descriptor
 import descriptor.FieldDescriptor
 import descriptor.MethodDescriptor
 import sun.reflect.generics.tree.ClassSignature
-import sun.reflect.generics.tree.FieldTypeSignature
 import sun.reflect.generics.tree.MethodTypeSignature
 import sun.reflect.generics.tree.TypeSignature
 
 /**
- * [ApiClass]es use dot.separated.format for the packageName always!
+ * [ClassApi]es use dot.separated.format for the packageName always!
  */
-data class ApiClass(
+data class ClassApi(
     val packageName: String,
     val className: String,
     val type: Type,
     val methods: Set<Method>,
     val fields: Set<Field>,
-    val innerClasses: Set<ApiClass>,
+    val innerClasses: Set<ClassApi>,
+    val visibility: Visibility,
     val signature: ClassSignature?
 ) {
     companion object;
 
     enum class Type {
         Interface,
-        Baseclass
+        ConcreteClass,
+        AbstractClass,
+        Enum,
+        Annotation
     }
 
     abstract class Member {
@@ -66,8 +69,7 @@ data class ApiClass(
 
 private fun String.addIf(boolean: Boolean) = if (boolean) this else ""
 
-val ApiClass.fullyQualifiedName get() = "$packageName.$className"
-val ApiClass.isInterface get() = type == ApiClass.Type.Interface
-val ApiClass.isBaseclass get() = type == ApiClass.Type.Baseclass
-val ApiClass.Member.isPublicApi get() = visibility == Visibility.Public || visibility == Visibility.Protected
-val ApiClass.Method.isConstructor get() = name == "<init>"
+val ClassApi.fullyQualifiedName get() = "$packageName.$className"
+val ClassApi.isInterface get() = type == ClassApi.Type.Interface
+val ClassApi.Member.isPublicApi get() = visibility == Visibility.Public || visibility == Visibility.Protected
+val ClassApi.Method.isConstructor get() = name == "<init>"

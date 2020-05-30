@@ -1,16 +1,27 @@
 package api
 
-import asm.isInterface
-import asm.isStatic
-import asm.visibility
+import api.ClassApi.Type.*
+import api.ClassApi.Type.Annotation
+import api.ClassApi.Type.Enum
+import asm.*
 import descriptor.FieldDescriptor
 import descriptor.MethodDescriptor
 import descriptor.read
+import isClassfile
 import readToClassNode
 import sun.reflect.generics.parser.SignatureParser
+import walkJar
 import java.nio.file.Path
 
-fun ApiClass.Companion.readFrom(classPath: Path): ApiClass {
+//TODO: adjust for crane
+fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
+    require(jarPath.toString().endsWith(".jar")) { "Specified path $jarPath does not point to a jar" }
+
+    //TODO: inner classes
+    return jarPath.walkJar().filter { it.isClassfile() }.map { readSingularClass(it) }.toList()
+}
+
+private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
     val signatureParser = SignatureParser.make()
     val classNode = readToClassNode(classPath)
     val methods = classNode.methods.map { method ->
@@ -21,7 +32,7 @@ fun ApiClass.Companion.readFrom(classPath: Path): ApiClass {
                     " (${descriptor.parameterDescriptors.size} of them) in method ${method.name}"
         }
 
-        ApiClass.Method(
+        ClassApi.Method(
             name = method.name, descriptor = descriptor, static = method.isStatic,
             parameterNames = nonThisLocals.take(descriptor.parameterDescriptors.size).map { it.name },
             visibility = method.visibility,
@@ -29,7 +40,7 @@ fun ApiClass.Companion.readFrom(classPath: Path): ApiClass {
         )
     }
     val fields = classNode.fields.map { field ->
-        ApiClass.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility,
+        ClassApi.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility,
             signature = field.signature?.let { signatureParser.parseTypeSig(it) }
         )
     }
@@ -40,10 +51,19 @@ fun ApiClass.Companion.readFrom(classPath: Path): ApiClass {
     val className = fullClassName.substring(packageSplit + 1, fullClassName.length)
 
     //TODO inner classes (inner classes are split across multiple classfiles)
-    return ApiClass(
+    return ClassApi(
         packageName = packageName, className = className, methods = methods.toSet(), fields = fields.toSet(),
         innerClasses = setOf(),
-        type = if (classNode.isInterface) ApiClass.Type.Interface else ApiClass.Type.Baseclass,
+        type = with(classNode) {
+            when {
+                isInterface -> Interface
+                isAnnotation -> Annotation
+                isEnum -> Enum
+                isAbstract -> AbstractClass
+                else -> ConcreteClass
+            }
+        },
+        visibility = classNode.visibility,
         signature = classNode.signature?.let { signatureParser.parseClassSig(it) }
     )
 }

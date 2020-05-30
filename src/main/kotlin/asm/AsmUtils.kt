@@ -55,4 +55,9 @@ val FieldNode.isPublic get() = access.public
 val FieldNode.isPackagePrivate get() = access.packagePrivate
 val FieldNode.visibility : Visibility get() = access.visibility
 
+
 val ClassNode.isInterface get() = opCode(Opcodes.ACC_INTERFACE)
+val ClassNode.isAbstract get() = opCode(Opcodes.ACC_ABSTRACT)
+val ClassNode.isEnum get() = opCode(Opcodes.ACC_ENUM)
+val ClassNode.isAnnotation get() = opCode(Opcodes.ACC_ANNOTATION)
+val ClassNode.visibility : Visibility get() = access.visibility
