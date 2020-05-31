@@ -1,7 +1,28 @@
 package codegeneration
 
+import descriptor.AnyType
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
+
+sealed class Expression {
+    class Class(val type: AnyType) : Expression()
+
+    sealed class Value : Expression() {
+        class Variable(val name: String) : Value()
+        class Cast(val target: Value, val castTo: AnyType) : Value()
+        class Field(val owner: Expression, val name: String) : Value()
+        object This : Value()
+    }
+
+    object Super : Expression()
+}
+
+fun Expression.Value.castTo(type: AnyType) = Expression.Value.Cast(this, type)
+
+enum class SelfConstructorType {
+    This,
+    Super
+}
 
 interface CodeGenerator {
     fun writeClass(packageName: String, name: String, writeTo: Path, init: GeneratedClass.() -> Unit)

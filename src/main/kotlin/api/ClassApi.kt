@@ -1,5 +1,6 @@
 package api
 
+import addIf
 import codegeneration.Visibility
 import descriptor.Descriptor
 import descriptor.FieldDescriptor
@@ -67,7 +68,6 @@ data class ClassApi(
     }
 }
 
-private fun String.addIf(boolean: Boolean) = if (boolean) this else ""
 
 val ClassApi.fullyQualifiedName get() = "$packageName.$className"
 val ClassApi.isInterface get() = type == ClassApi.Type.Interface

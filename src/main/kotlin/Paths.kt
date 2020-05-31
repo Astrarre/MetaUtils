@@ -29,3 +29,5 @@ fun Path.copyTo(target: Path, overwrite: Boolean = true): Path? {
 fun readToClassNode(classFile: Path): ClassNode = classFile.inputStream().use { stream ->
     ClassNode().also { ClassReader(stream).accept(it, 0) }
 }
+
+fun String.addIf(boolean: Boolean) = if (boolean) this else ""
