@@ -50,8 +50,14 @@ interface GeneratedClass {
 interface GeneratedInterface : GeneratedClass
 
 sealed class Visibility {
+    companion object {
+        val Public = ClassVisibility.Public
+        val Private = ClassVisibility.Private
+        val Package = ClassVisibility.Package
+    }
     object Protected : Visibility()
 }
+
 
 sealed class ClassVisibility : Visibility() {
     object Public : ClassVisibility()
