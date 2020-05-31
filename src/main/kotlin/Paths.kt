@@ -43,3 +43,4 @@ fun String.splitFullyQualifiedName(dotQualified: Boolean = true): FullyQualified
 }
 
 fun String.toDotQualified() = replace('/','.')
+// slight change
