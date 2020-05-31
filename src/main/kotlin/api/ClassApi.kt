@@ -1,6 +1,7 @@
 package api
 
 import addIf
+import codegeneration.ClassVisibility
 import codegeneration.Visibility
 import descriptor.Descriptor
 import descriptor.FieldDescriptor
@@ -8,6 +9,11 @@ import descriptor.MethodDescriptor
 import sun.reflect.generics.tree.ClassSignature
 import sun.reflect.generics.tree.MethodTypeSignature
 import sun.reflect.generics.tree.TypeSignature
+
+interface Visible {
+    val visibility : Visibility
+}
+
 
 /**
  * [ClassApi]es use dot.separated.format for the packageName always!
@@ -19,9 +25,9 @@ data class ClassApi(
     val methods: Set<Method>,
     val fields: Set<Field>,
     val innerClasses: Set<ClassApi>,
-    val visibility: Visibility,
+    override val visibility: ClassVisibility,
     val signature: ClassSignature?
-) {
+) : Visible{
     companion object;
 
     enum class Type {
@@ -32,11 +38,10 @@ data class ClassApi(
         Annotation
     }
 
-    abstract class Member {
+    abstract class Member : Visible {
         abstract val name: String
         abstract val descriptor: Descriptor
         abstract val static: Boolean
-        abstract val visibility: Visibility
     }
 
 
@@ -71,5 +76,6 @@ data class ClassApi(
 
 val ClassApi.fullyQualifiedName get() = "$packageName.$className"
 val ClassApi.isInterface get() = type == ClassApi.Type.Interface
-val ClassApi.Member.isPublicApi get() = visibility == Visibility.Public || visibility == Visibility.Protected
+val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
+val Visible.isPublic get() = visibility == ClassVisibility.Public
 val ClassApi.Method.isConstructor get() = name == "<init>"

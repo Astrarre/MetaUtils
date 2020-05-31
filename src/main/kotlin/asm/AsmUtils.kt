@@ -1,5 +1,6 @@
 package asm
 
+import codegeneration.ClassVisibility
 import codegeneration.Visibility
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
@@ -32,12 +33,12 @@ private val Int.private get() = opCode(Opcodes.ACC_PRIVATE)
 private val Int.protected get() = opCode(Opcodes.ACC_PROTECTED)
 private val Int.public get() = opCode(Opcodes.ACC_PUBLIC)
 private val Int.packagePrivate get() = !private && !protected && !public
-private val Int.visibility : Visibility
+private val Int.visibility: Visibility
     get() = when {
-        private -> Visibility.Private
+        private -> ClassVisibility.Private
         protected -> Visibility.Protected
-        public -> Visibility.Public
-        packagePrivate -> Visibility.Package
+        public -> ClassVisibility.Public
+        packagePrivate -> ClassVisibility.Package
         else -> error("Access is unexpectedly not private, protected, public, or package private...")
     }
 
@@ -46,18 +47,27 @@ val MethodNode.isPrivate get() = access.private
 val MethodNode.isProtected get() = access.protected
 val MethodNode.isPublic get() = access.public
 val MethodNode.isPackagePrivate get() = access.packagePrivate
-val MethodNode.visibility : Visibility get() = access.visibility
+val MethodNode.visibility: Visibility get() = access.visibility
 
 val FieldNode.isStatic get() = access.static
 val FieldNode.isPrivate get() = access.private
 val FieldNode.isProtected get() = access.protected
 val FieldNode.isPublic get() = access.public
 val FieldNode.isPackagePrivate get() = access.packagePrivate
-val FieldNode.visibility : Visibility get() = access.visibility
+val FieldNode.visibility: Visibility get() = access.visibility
 
 
 val ClassNode.isInterface get() = opCode(Opcodes.ACC_INTERFACE)
 val ClassNode.isAbstract get() = opCode(Opcodes.ACC_ABSTRACT)
 val ClassNode.isEnum get() = opCode(Opcodes.ACC_ENUM)
 val ClassNode.isAnnotation get() = opCode(Opcodes.ACC_ANNOTATION)
-val ClassNode.visibility : Visibility get() = access.visibility
+val ClassNode.visibility: ClassVisibility
+    get() = with(access) {
+        when {
+            protected -> error("Class access is unexpectedly protected")
+            private -> ClassVisibility.Private
+            public -> ClassVisibility.Public
+            packagePrivate -> ClassVisibility.Package
+            else -> error("Access is unexpectedly not private, protected, public, or package private...")
+        }
+    }

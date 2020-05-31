@@ -46,8 +46,11 @@ object JavaCodeGenerator /*: CodeGenerator */ {
         name: String,
         writeTo: Path,
         isInterface: Boolean,
+        /**
+         * Interfaces are NOT considered abstract
+         */
         isAbstract: Boolean,
-        visibility: Visibility = Visibility.Public,
+        visibility: Visibility,
         init: JavaGeneratedClass.() -> Unit
     ) {
         val builder = if (isInterface) TypeSpec.interfaceBuilder(name) else TypeSpec.classBuilder(name)

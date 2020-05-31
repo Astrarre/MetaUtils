@@ -49,16 +49,21 @@ interface GeneratedClass {
 
 interface GeneratedInterface : GeneratedClass
 
-enum class Visibility {
-    Public,
-    Private,
-    Protected,
-    Package
+sealed class Visibility {
+    object Protected : Visibility()
 }
 
+sealed class ClassVisibility : Visibility() {
+    object Public : ClassVisibility()
+    object Private : ClassVisibility()
+    object Package : ClassVisibility()
+}
+
+
+
 fun Visibility.toModifier(): Modifier? = when (this) {
-    Visibility.Public -> Modifier.PUBLIC
-    Visibility.Private -> Modifier.PRIVATE
+    ClassVisibility.Public -> Modifier.PUBLIC
+    ClassVisibility.Private -> Modifier.PRIVATE
     Visibility.Protected -> Modifier.PROTECTED
-    Visibility.Package -> null
+    ClassVisibility.Package -> null
 }
