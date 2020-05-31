@@ -7,6 +7,10 @@ import descriptor.*
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 
+@DslMarker
+annotation class CodeGeneratorDsl
+
+@CodeGeneratorDsl
 object JavaCodeGenerator /*: CodeGenerator */ {
     //MethodSpec main = MethodSpec.methodBuilder("main")
 //    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -79,7 +83,7 @@ object JavaCodeGenerator /*: CodeGenerator */ {
 //    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
 //    .addMethod(main)
 //    .build();
-
+@CodeGeneratorDsl
 open class JavaGeneratedClass(
     private val typeSpec: TypeSpec.Builder,
     private val isInterface: Boolean
@@ -190,7 +194,7 @@ private fun AnyType.toTypeName(): TypeName = when (this) {
     is ObjectType -> this.toClassName()
     is ArrayType -> ArrayTypeName.of(componentType.toTypeName())
 }
-
+@CodeGeneratorDsl
 class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) {
 //    fun addStatement(format: String, vararg typeArgs: AnyType) {
 //        methodSpec.addStatement(format, *typeArgs.map { it.toTypeName() }.toTypedArray())
@@ -238,14 +242,14 @@ private fun Expression.toJavaCode(): FormattedString = when (this) {
     is Expression.Value.Variable -> FormattedString(name, listOf())
     is Expression.Value.Cast -> {
         val targetCode = target.toJavaCode()
-        FormattedString("(${targetCode.string}($TYPE_FORMAT))", targetCode.formatArguments + castTo.toTypeName())
+        FormattedString("(($TYPE_FORMAT)${targetCode.string})", targetCode.formatArguments + castTo.toTypeName())
     }
     is Expression.Value.Field -> owner.toJavaCode().let { FormattedString("${it.string}.$name", it.formatArguments) }
     Expression.Value.This -> FormattedString("this", listOf())
     Expression.Super -> FormattedString("super", listOf())
 }
 
-
+@CodeGeneratorDsl
 class JavaGeneratedField(private val fieldSpec: FieldSpec.Builder) {
     fun setInitializer(value: Expression.Value) {
         val (format, arguments) = value.toJavaCode()

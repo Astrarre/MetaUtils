@@ -3,9 +3,7 @@ package api
 import addIf
 import codegeneration.ClassVisibility
 import codegeneration.Visibility
-import descriptor.Descriptor
-import descriptor.FieldDescriptor
-import descriptor.MethodDescriptor
+import descriptor.*
 import sun.reflect.generics.tree.ClassSignature
 import sun.reflect.generics.tree.MethodTypeSignature
 import sun.reflect.generics.tree.TypeSignature
@@ -19,15 +17,15 @@ interface Visible {
  * [ClassApi]es use dot.separated.format for the packageName always!
  */
 data class ClassApi(
-    val packageName: String,
+    val packageName: String?,
     val className: String,
-    val type: Type,
+    val classType: Type,
     val methods: Set<Method>,
     val fields: Set<Field>,
     val innerClasses: Set<ClassApi>,
     override val visibility: ClassVisibility,
     val signature: ClassSignature?
-) : Visible{
+) : Visible {
     companion object;
 
     enum class Type {
@@ -74,8 +72,12 @@ data class ClassApi(
 }
 
 
-val ClassApi.fullyQualifiedName get() = "$packageName.$className"
-val ClassApi.isInterface get() = type == ClassApi.Type.Interface
+val ClassApi.fullyQualifiedName get() = if(packageName == null) className else "$packageName.$className"
+val ClassApi.isInterface get() = classType == ClassApi.Type.Interface
 val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
-val Visible.isPublic get() = visibility == ClassVisibility.Public
+val Visible.isPublic get() = visibility == Visibility.Public
 val ClassApi.Method.isConstructor get() = name == "<init>"
+val ClassApi.Method.parameters get() = parameterNames.zip(descriptor.parameterDescriptors).toMap()
+val ClassApi.Method.returnType get() = descriptor.returnDescriptor
+val ClassApi.Method.isVoid get() = returnType == ReturnDescriptor.Void
+fun ClassApi.nameAsType() = ObjectType.dotQualified(this.fullyQualifiedName)

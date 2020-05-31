@@ -35,10 +35,10 @@ private val Int.public get() = opCode(Opcodes.ACC_PUBLIC)
 private val Int.packagePrivate get() = !private && !protected && !public
 private val Int.visibility: Visibility
     get() = when {
-        private -> ClassVisibility.Private
+        private -> Visibility.Private
         protected -> Visibility.Protected
-        public -> ClassVisibility.Public
-        packagePrivate -> ClassVisibility.Package
+        public -> Visibility.Public
+        packagePrivate -> Visibility.Package
         else -> error("Access is unexpectedly not private, protected, public, or package private...")
     }
 

@@ -9,7 +9,9 @@ import descriptor.MethodDescriptor
 import descriptor.read
 import isClassfile
 import readToClassNode
+import splitFullyQualifiedName
 import sun.reflect.generics.parser.SignatureParser
+import toDotQualified
 import walkJar
 import java.nio.file.Path
 
@@ -43,16 +45,15 @@ private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
         )
     }
 
-    val fullClassName = classNode.name
-    val packageSplit = fullClassName.lastIndexOf("/")
-    val packageName = fullClassName.substring(0, packageSplit).replace("/", ".")
-    val className = fullClassName.substring(packageSplit + 1, fullClassName.length)
+    val (packageName,className) = classNode.name.splitFullyQualifiedName(dotQualified = false)
+
 
     //TODO inner classes (inner classes are split across multiple classfiles)
     return ClassApi(
-        packageName = packageName, className = className, methods = methods.toSet(), fields = fields.toSet(),
+        packageName = packageName?.toDotQualified(), className = className.toDotQualified(),
+        methods = methods.toSet(), fields = fields.toSet(),
         innerClasses = setOf(),
-        type = with(classNode) {
+        classType = with(classNode) {
             when {
                 isInterface -> Interface
                 isAnnotation -> Annotation
