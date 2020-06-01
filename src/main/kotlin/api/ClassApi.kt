@@ -39,7 +39,7 @@ data class ClassApi(
     abstract class Member : Visible {
         abstract val name: String
         abstract val descriptor: Descriptor
-        abstract val static: Boolean
+        abstract val isStatic: Boolean
     }
 
 
@@ -48,21 +48,21 @@ data class ClassApi(
         override val descriptor: MethodDescriptor,
         val parameterNames: List<String>,
         override val visibility: Visibility,
-        override val static: Boolean,
+        override val isStatic: Boolean,
         val signature: MethodTypeSignature?
     ) : Member() {
-        override fun toString() = "static ".addIf(static) + "$name$descriptor"
+        override fun toString() = "static ".addIf(isStatic) + "$name$descriptor"
 
     }
 
     data class Field(
         override val name: String,
         override val descriptor: FieldDescriptor,
-        override val static: Boolean,
+        override val isStatic: Boolean,
         override val visibility: Visibility,
         val signature: TypeSignature?
     ) : Member() {
-        override fun toString() = "static ".addIf(static) + "$name: $descriptor"
+        override fun toString() = "static ".addIf(isStatic) + "$name: $descriptor"
     }
 
     override fun toString(): String {

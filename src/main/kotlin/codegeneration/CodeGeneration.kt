@@ -4,20 +4,8 @@ import descriptor.AnyType
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 
-sealed class Expression {
-    class Class(val type: AnyType) : Expression()
 
-    sealed class Value : Expression() {
-        class Variable(val name: String) : Value()
-        class Cast(val target: Value, val castTo: AnyType) : Value()
-        class Field(val owner: Expression, val name: String) : Value()
-        object This : Value()
-    }
 
-    object Super : Expression()
-}
-
-fun Expression.Value.castTo(type: AnyType) = Expression.Value.Cast(this, type)
 
 enum class SelfConstructorType {
     This,
@@ -55,6 +43,7 @@ sealed class Visibility {
         val Private = ClassVisibility.Private
         val Package = ClassVisibility.Package
     }
+
     object Protected : Visibility()
 }
 
@@ -64,7 +53,6 @@ sealed class ClassVisibility : Visibility() {
     object Private : ClassVisibility()
     object Package : ClassVisibility()
 }
-
 
 
 fun Visibility.toModifier(): Modifier? = when (this) {

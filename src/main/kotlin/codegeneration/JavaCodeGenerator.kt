@@ -3,7 +3,9 @@ package codegeneration
 
 import addIf
 import com.squareup.javapoet.*
-import descriptor.*
+import descriptor.AnyType
+import descriptor.ObjectType
+import descriptor.ReturnDescriptor
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 
@@ -169,56 +171,53 @@ open class JavaGeneratedClass(
 
 }
 
-private fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
-    is AnyType -> toTypeName()
-    ReturnDescriptor.Void -> TypeName.VOID
-}
 
-private fun ObjectType.toClassName(): ClassName {
-    val className = simpleName()
-    val innerClassSplit = className.split("\$")
-    val rootClass = innerClassSplit[0]
-    val innerClasses = innerClassSplit.drop(1)
-    return ClassName.get(packageName(), rootClass, *innerClasses.toTypedArray())
-}
-
-private fun AnyType.toTypeName(): TypeName = when (this) {
-    PrimitiveType.Byte -> TypeName.BYTE
-    PrimitiveType.Char -> TypeName.CHAR
-    PrimitiveType.Double -> TypeName.DOUBLE
-    PrimitiveType.Float -> TypeName.FLOAT
-    PrimitiveType.Int -> TypeName.INT
-    PrimitiveType.Long -> TypeName.LONG
-    PrimitiveType.Short -> TypeName.SHORT
-    PrimitiveType.Boolean -> TypeName.BOOLEAN
-    is ObjectType -> this.toClassName()
-    is ArrayType -> ArrayTypeName.of(componentType.toTypeName())
-}
 @CodeGeneratorDsl
 class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) {
 //    fun addStatement(format: String, vararg typeArgs: AnyType) {
 //        methodSpec.addStatement(format, *typeArgs.map { it.toTypeName() }.toTypedArray())
 //    }
 
-    fun addFunctionCall(
-        receiver: Expression,
-        methodName: String,
-        parameters: List<Expression.Value>,
-        returnResult: Boolean
-    ) {
-        val (receiverString, receiverArgs) = receiver.toJavaCode()
-        val allArgs = receiverArgs + parameters.flatMap { it.toJavaCode().formatArguments }
-        val string = "return ".addIf(returnResult) + "$receiverString." + methodName + "(" +
-                parameters.joinToString(", ") { it.toJavaCode().string } + ")"
-        methodSpec.addStatement(string, *allArgs.toTypedArray())
+    fun addStatement(statement: Statement) {
+        val (format, arguments) = JavaCodeWriter().write(statement)
+        methodSpec.addStatement(format, *arguments.toTypedArray())
     }
 
-    // i.e. this() or super()
-    fun addSelfConstructorCall(type: SelfConstructorType, parameters: List<Expression.Value>) {
-        val allArgs = parameters.flatMap { it.toJavaCode().formatArguments }
-        val string = type.toJavaCode() + "(" + parameters.joinToString(", ") { it.toJavaCode().string } + ")"
-        methodSpec.addStatement(string, *allArgs.toTypedArray())
-    }
+//    fun addFunctionCall(
+//        /**
+//         * receiver = null for implicit receiver
+//         */
+//        receiver: Statement?,
+//        /**
+//         * methodName = null for constructors
+//         */
+//        methodName: String?,
+//        parameters: List<Expression>,
+//        returnResult: Boolean
+//    ) {
+//        require(receiver != null || methodName != null)
+//        val allArgs = parameters.flatMap { it.toJavaCode().formatArguments }.toMutableList()
+//
+//        val receiverPart = if (receiver != null) {
+//            val (receiverString, receiverArgs) = receiver.toJavaCode()
+//            allArgs.addAll(receiverArgs)
+//            receiverString
+//        } else ""
+//
+//        val receiverMethodNameSeparator = ".".addIf(receiver != null && methodName != null)
+//
+//        val string = "return ".addIf(returnResult) +
+//                receiverPart + receiverMethodNameSeparator + (methodName ?: "") + "(" +
+//                parameters.joinToString(", ") { it.toJavaCode().string } + ")"
+//        methodSpec.addStatement(string, *allArgs.toTypedArray())
+//    }
+//
+//    // i.e. this() or super()
+//    fun addSelfConstructorCall(type: SelfConstructorType, parameters: List<Expression>) {
+//        val allArgs = parameters.flatMap { it.toJavaCode().formatArguments }
+//        val string = type.toJavaCode() + "(" + parameters.joinToString(", ") { it.toJavaCode().string } + ")"
+//        methodSpec.addStatement(string, *allArgs.toTypedArray())
+//    }
 
     fun addComment(comment: String) {
         methodSpec.addComment(comment)
@@ -228,34 +227,54 @@ class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) {
 }
 
 
-private data class FormattedString(val string: String, val formatArguments: List<TypeName>)
-
-private fun SelfConstructorType.toJavaCode() = when (this) {
-    SelfConstructorType.This -> "this"
-    SelfConstructorType.Super -> "super"
-}
-
-private const val TYPE_FORMAT = "\$T"
-
-private fun Expression.toJavaCode(): FormattedString = when (this) {
-    is Expression.Class -> FormattedString(TYPE_FORMAT, listOf(type.toTypeName()))
-    is Expression.Value.Variable -> FormattedString(name, listOf())
-    is Expression.Value.Cast -> {
-        val targetCode = target.toJavaCode()
-        FormattedString("(($TYPE_FORMAT)${targetCode.string})", targetCode.formatArguments + castTo.toTypeName())
-    }
-    is Expression.Value.Field -> owner.toJavaCode().let { FormattedString("${it.string}.$name", it.formatArguments) }
-    Expression.Value.This -> FormattedString("this", listOf())
-    Expression.Super -> FormattedString("super", listOf())
-}
-
 @CodeGeneratorDsl
 class JavaGeneratedField(private val fieldSpec: FieldSpec.Builder) {
-    fun setInitializer(value: Expression.Value) {
-        val (format, arguments) = value.toJavaCode()
+    fun setInitializer(value: Expression) {
+        val (format, arguments) = JavaCodeWriter().write(value)
         fieldSpec.initializer(format, *arguments.toTypedArray())
     }
 
 
     fun build(): FieldSpec = fieldSpec.build()
 }
+
+//private data class FormattedString(val string: String, val formatArguments: List<TypeName>) {
+//    fun mapString(map: (String) -> String) = copy(string = map(string))
+//    fun addArg(arg: TypeName) = copy(formatArguments = formatArguments + arg)
+//}
+//
+//private val String.format get() = FormattedString(this, listOf())
+//private fun String.format(args: List<TypeName>) = FormattedString(this, args)
+//private fun String.format(arg: TypeName) = FormattedString(this, listOf(arg))
+//
+//private fun SelfConstructorType.toJavaCode() = when (this) {
+//    SelfConstructorType.This -> "this"
+//    SelfConstructorType.Super -> "super"
+//}
+//
+//private const val TYPE_FORMAT = "\$T"
+//
+////TODO: make code more reusable
+//private fun Statement.toJavaCode(): FormattedString = when (this) {
+////    is Statement.Class -> FormattedString(TYPE_FORMAT, listOf(type.toTypeName()))
+//    is Expression.Variable -> name.format
+//    is Expression.Cast -> target.toJavaCode().mapString { "(($TYPE_FORMAT)$it)" }.addArg(castTo.toTypeName())
+//    is Expression.Field -> owner.toJavaCode().mapString { "$it.$name" }
+//    Expression.This -> "this".format
+////    Statement.Super -> FormattedString("super", listOf())
+//    is Expression.Call -> {
+//        val (prefixStr, prefixArgs) = this.prefix()
+//        val parametersCode = parameters.map { it.toJavaCode() }
+//        val totalArgs = prefixArgs + parametersCode.flatMap { it.formatArguments }
+//        (prefixStr + "(" + parametersCode.joinToString(", ") { it.string } + ")").format(totalArgs)
+//    }
+//    is Expression.MethodCall -> TODO()
+//    is Statement.Return -> TODO()
+//}
+//
+//private fun Expression.Call.prefix(): FormattedString = when (this) {
+//    is Expression.Call.This -> "this".format
+//    is Expression.Call.Super -> "super".format
+//    is Expression.Call.Method -> receiver?.toJavaCode()?.mapString { "$it.$name" } ?: name.format
+//    is Expression.Call.Constructor -> TYPE_FORMAT.format(constructing.toTypeName())
+//}

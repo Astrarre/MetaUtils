@@ -1,6 +1,7 @@
 package testing
 
 import copyTo
+import deleteRecursively
 import walkJar
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
@@ -18,7 +19,7 @@ fun getResource(path: String): Path = Paths.get(
 
 fun debugResultJar(jar: Path) {
     val targetDir = jar.parent.resolve(jar.toFile().nameWithoutExtension)
-    targetDir.toFile().deleteRecursively()
+    targetDir.deleteRecursively()
     unzipJar(targetDir, jar)
 }
 

@@ -7,6 +7,7 @@ import asm.*
 import descriptor.FieldDescriptor
 import descriptor.MethodDescriptor
 import descriptor.read
+import hasExtension
 import isClassfile
 import readToClassNode
 import splitFullyQualifiedName
@@ -16,7 +17,7 @@ import walkJar
 import java.nio.file.Path
 
 fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
-    require(jarPath.toString().endsWith(".jar")) { "Specified path $jarPath does not point to a jar" }
+    require(jarPath.hasExtension(".jar")) { "Specified path $jarPath does not point to a jar" }
 
     //TODO: inner classes
     return jarPath.walkJar { files -> files.filter { it.isClassfile() }.map { readSingularClass(it) }.toList() }
@@ -33,7 +34,7 @@ private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
         }
 
         ClassApi.Method(
-            name = method.name, descriptor = descriptor, static = method.isStatic,
+            name = method.name, descriptor = descriptor, isStatic = method.isStatic,
             parameterNames = nonThisLocals.take(descriptor.parameterDescriptors.size).map { it.name },
             visibility = method.visibility,
             signature = method.signature?.let { SignatureParser.make().parseMethodSig(it) }
