@@ -2,6 +2,7 @@ package asm
 
 import codegeneration.ClassVisibility
 import codegeneration.Visibility
+import com.sun.org.apache.xpath.internal.compiler.OpCodes
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
@@ -33,6 +34,7 @@ private val Int.private get() = opCode(Opcodes.ACC_PRIVATE)
 private val Int.protected get() = opCode(Opcodes.ACC_PROTECTED)
 private val Int.public get() = opCode(Opcodes.ACC_PUBLIC)
 private val Int.packagePrivate get() = !private && !protected && !public
+private val Int.final get() = opCode(Opcodes.ACC_FINAL)
 private val Int.visibility: Visibility
     get() = when {
         private -> Visibility.Private
@@ -55,6 +57,7 @@ val FieldNode.isProtected get() = access.protected
 val FieldNode.isPublic get() = access.public
 val FieldNode.isPackagePrivate get() = access.packagePrivate
 val FieldNode.visibility: Visibility get() = access.visibility
+val FieldNode.isFinal: Boolean get() = access.final
 
 
 val ClassNode.isInterface get() = opCode(Opcodes.ACC_INTERFACE)

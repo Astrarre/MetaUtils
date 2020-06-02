@@ -11,12 +11,13 @@ object SuperReceiver :   Code(), Receiver
 
 sealed class Statement : Code() {
     class Return(val target: Expression) : Statement()
+    class Assignment(val target : Expression, val assignedValue : Expression) : Statement()
 }
 
 sealed class Expression : Statement(), Receiver {
     class Variable(val name: String) : Expression()
     class Cast(val target: Expression, val castTo: AnyType) : Expression()
-    class Field(val owner: Statement, val name: String) : Expression()
+    class Field(val owner: Receiver, val name: String) : Expression()
     sealed class Call(val parameters: List<Expression>) : Expression() {
         class This(parameters: List<Expression>) : Call(parameters)
         class Super(parameters: List<Expression>) : Call(parameters)

@@ -41,7 +41,7 @@ private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
         )
     }
     val fields = classNode.fields.map { field ->
-        ClassApi.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility,
+        ClassApi.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility, field.isFinal,
             signature = field.signature?.let { SignatureParser.make().parseTypeSig(it) }
         )
     }

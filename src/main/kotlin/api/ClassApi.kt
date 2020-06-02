@@ -60,6 +60,7 @@ data class ClassApi(
         override val descriptor: FieldDescriptor,
         override val isStatic: Boolean,
         override val visibility: Visibility,
+        val isFinal : Boolean,
         val signature: TypeSignature?
     ) : Member() {
         override fun toString() = "static ".addIf(isStatic) + "$name: $descriptor"
@@ -74,6 +75,7 @@ data class ClassApi(
 
 val ClassApi.fullyQualifiedName get() = if(packageName == null) className else "$packageName.$className"
 val ClassApi.isInterface get() = classType == ClassApi.Type.Interface
+val ClassApi.isAbstract get() = classType == ClassApi.Type.AbstractClass
 val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
 val Visible.isPublic get() = visibility == Visibility.Public
 val ClassApi.Method.isConstructor get() = name == "<init>"

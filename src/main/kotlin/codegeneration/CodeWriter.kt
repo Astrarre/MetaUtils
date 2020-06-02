@@ -24,7 +24,7 @@ internal open class JavaCodeWriter : CodeWriter() {
         is Expression.Variable -> code.name.format
         is Expression.Cast -> write(code.target).mapString { "($TYPE_FORMAT)$it" }
             .prependArg(code.castTo.toTypeName())
-        is Expression.Field -> write(code.owner).mapString { "${it.withParentheses()}.${code.name}" }
+        is Expression.Field -> write(code.owner as Code).mapString { "${it.withParentheses()}.${code.name}" }
         Expression.This -> "this".format
         is Expression.Call -> {
             val (prefixStr, prefixArgs) = code.prefix()
@@ -35,10 +35,12 @@ internal open class JavaCodeWriter : CodeWriter() {
         is Statement.Return -> write(code.target).mapString { "return $it" }
         is ClassReceiver -> TYPE_FORMAT.format(code.type.toTypeName())
         SuperReceiver -> "super".format
+        is Statement.Assignment -> write(code.target).mapString { "$it = " } + write(code.assignedValue)
     }
 
     // Add parentheses to casts and constructor calls
-    private fun String.withParentheses() = if ((startsWith("(") || startsWith("new")) && !startsWith(")")) "($this)" else this
+    private fun String.withParentheses() =
+        if ((startsWith("(") || startsWith("new")) && !startsWith(")")) "($this)" else this
 //    private fun String.removeParentheses() = if (startsWith("(")) substring(1, length - 1) else this
 
     private fun Expression.Call.prefix(): FormattedString = when (this) {
@@ -71,11 +73,19 @@ private fun AnyType.toTypeName(): TypeName = when (this) {
     is ArrayType -> com.squareup.javapoet.ArrayTypeName.of(componentType.toTypeName())
 }
 
+//TODO: replace with normal string?
 internal data class FormattedString(val string: String, val formatArguments: List<TypeName>) {
     fun mapString(map: (String) -> String) = copy(string = map(string))
     fun appendArg(arg: TypeName) = copy(formatArguments = formatArguments + arg)
     fun prependArg(arg: TypeName) = copy(formatArguments = listOf(arg) + formatArguments)
+
+//    operator fun plus(appended: String) = FormattedString(this.string + appended, formatArguments)
+    operator fun plus(other: FormattedString) =
+        FormattedString(this.string + other.string, formatArguments + other.formatArguments)
 }
+
+//internal operator fun String.plus(formatted: FormattedString) =
+//    FormattedString(this + formatted.string, formatted.formatArguments)
 
 private val String.format get() = FormattedString(this, listOf())
 private fun String.format(args: List<TypeName>) = FormattedString(this, args)
@@ -93,22 +103,4 @@ internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
 
 
 private const val TYPE_FORMAT = "\$T"
-
-//
-//private fun Statement.toJavaCode(): FormattedString = when (this) {
-////    is Statement.Class -> FormattedString(TYPE_FORMAT, listOf(type.toTypeName()))
-//    is Expression.Variable -> name.format
-//    is Expression.Cast -> target.toJavaCode().mapString { "(($TYPE_FORMAT)$it)" }.addArg(castTo.toTypeName())
-//    is Expression.Field -> owner.toJavaCode().mapString { "$it.$name" }
-//    Expression.This -> "this".format
-////    Statement.Super -> FormattedString("super", listOf())
-//    is Expression.Call -> {
-//        val (prefixStr, prefixArgs) = this.prefix()
-//        val parametersCode = parameters.map { it.toJavaCode() }
-//        val totalArgs = prefixArgs + parametersCode.flatMap { it.formatArguments }
-//        (prefixStr + "(" + parametersCode.joinToString(", ") { it.string } + ")").format(totalArgs)
-//    }
-//    is Expression.MethodCall -> TODO()
-//    is Statement.Return -> TODO()
-//}
 

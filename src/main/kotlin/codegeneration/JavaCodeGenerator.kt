@@ -1,7 +1,6 @@
 package codegeneration
 
 
-import addIf
 import com.squareup.javapoet.*
 import descriptor.AnyType
 import descriptor.ObjectType
@@ -97,7 +96,7 @@ open class JavaGeneratedClass(
         abstract: Boolean,
         static: Boolean,
         final: Boolean,
-        parameters: List<Pair<String, AnyType>>,
+        parameters: Map<String, AnyType>,
         body: JavaGeneratedMethod.() -> Unit
     ) {
         addMethodImpl(visibility, parameters, MethodSpec.methodBuilder(name), internalConfig = {
@@ -114,7 +113,7 @@ open class JavaGeneratedClass(
 
     fun addConstructor(
         visibility: Visibility,
-        parameters: List<Pair<String, AnyType>>,
+        parameters: Map<String, AnyType>,
         init: JavaGeneratedMethod.() -> Unit
     ) {
         require(!isInterface) { "Interfaces don't have constructors" }
@@ -123,7 +122,7 @@ open class JavaGeneratedClass(
 
     private fun addMethodImpl(
         visibility: Visibility,
-        parameters: List<Pair<String, AnyType>>,
+        parameters: Map<String, AnyType>,
         builder: MethodSpec.Builder,
         internalConfig: MethodSpec.Builder.() -> Unit,
         userConfig: JavaGeneratedMethod.() -> Unit
@@ -149,16 +148,19 @@ open class JavaGeneratedClass(
         visibility: Visibility,
         static: Boolean,
         final: Boolean,
-        init: JavaGeneratedField.() -> Unit
+        initializer: Expression?
     ) {
-        typeSpec.addField(
-            JavaGeneratedField(FieldSpec.builder(type.toTypeName(), name)
-                .apply {
-                    visibility.toModifier()?.let { addModifiers(it) }
-                    if (static) addModifiers(Modifier.STATIC)
-                    if (final) addModifiers(Modifier.FINAL)
-                }).apply(init)
-                .build()
+        typeSpec.addField(FieldSpec.builder(type.toTypeName(), name)
+            .apply {
+                visibility.toModifier()?.let { addModifiers(it) }
+                if (static) addModifiers(Modifier.STATIC)
+                if (final) addModifiers(Modifier.FINAL)
+                if (initializer != null) {
+                    val (format, arguments) = JavaCodeWriter().write(initializer)
+                    initializer(format, *arguments.toTypedArray())
+                }
+            }
+            .build()
         )
     }
 
@@ -227,54 +229,3 @@ class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) {
 }
 
 
-@CodeGeneratorDsl
-class JavaGeneratedField(private val fieldSpec: FieldSpec.Builder) {
-    fun setInitializer(value: Expression) {
-        val (format, arguments) = JavaCodeWriter().write(value)
-        fieldSpec.initializer(format, *arguments.toTypedArray())
-    }
-
-
-    fun build(): FieldSpec = fieldSpec.build()
-}
-
-//private data class FormattedString(val string: String, val formatArguments: List<TypeName>) {
-//    fun mapString(map: (String) -> String) = copy(string = map(string))
-//    fun addArg(arg: TypeName) = copy(formatArguments = formatArguments + arg)
-//}
-//
-//private val String.format get() = FormattedString(this, listOf())
-//private fun String.format(args: List<TypeName>) = FormattedString(this, args)
-//private fun String.format(arg: TypeName) = FormattedString(this, listOf(arg))
-//
-//private fun SelfConstructorType.toJavaCode() = when (this) {
-//    SelfConstructorType.This -> "this"
-//    SelfConstructorType.Super -> "super"
-//}
-//
-//private const val TYPE_FORMAT = "\$T"
-//
-////TODO: make code more reusable
-//private fun Statement.toJavaCode(): FormattedString = when (this) {
-////    is Statement.Class -> FormattedString(TYPE_FORMAT, listOf(type.toTypeName()))
-//    is Expression.Variable -> name.format
-//    is Expression.Cast -> target.toJavaCode().mapString { "(($TYPE_FORMAT)$it)" }.addArg(castTo.toTypeName())
-//    is Expression.Field -> owner.toJavaCode().mapString { "$it.$name" }
-//    Expression.This -> "this".format
-////    Statement.Super -> FormattedString("super", listOf())
-//    is Expression.Call -> {
-//        val (prefixStr, prefixArgs) = this.prefix()
-//        val parametersCode = parameters.map { it.toJavaCode() }
-//        val totalArgs = prefixArgs + parametersCode.flatMap { it.formatArguments }
-//        (prefixStr + "(" + parametersCode.joinToString(", ") { it.string } + ")").format(totalArgs)
-//    }
-//    is Expression.MethodCall -> TODO()
-//    is Statement.Return -> TODO()
-//}
-//
-//private fun Expression.Call.prefix(): FormattedString = when (this) {
-//    is Expression.Call.This -> "this".format
-//    is Expression.Call.Super -> "super".format
-//    is Expression.Call.Method -> receiver?.toJavaCode()?.mapString { "$it.$name" } ?: name.format
-//    is Expression.Call.Constructor -> TYPE_FORMAT.format(constructing.toTypeName())
-//}
