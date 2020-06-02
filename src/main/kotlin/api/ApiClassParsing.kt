@@ -9,22 +9,30 @@ import descriptor.MethodDescriptor
 import descriptor.read
 import hasExtension
 import isClassfile
+import openJar
 import readToClassNode
 import splitFullyQualifiedName
 import sun.reflect.generics.parser.SignatureParser
 import toDotQualified
-import walkJar
+import walk
+import java.nio.file.FileSystem
 import java.nio.file.Path
 
 fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
     require(jarPath.hasExtension(".jar")) { "Specified path $jarPath does not point to a jar" }
 
-    //TODO: inner classes
-    return jarPath.walkJar { files -> files.filter { it.isClassfile() }.map { readSingularClass(it) }.toList() }
+    // Only pass top-level classes into readSingularClass()
+
+    return jarPath.openJar { jar ->
+        jar.getPath("/").walk()
+            .filter { it.isClassfile() && '$' !in it.toString() }.map { readSingularClass(jar, it, outerClass = null) }
+            .toList()
+    }
+
 }
 
-private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
-    val classNode = readToClassNode(classPath)
+private fun ClassApi.Companion.readSingularClass(fs: FileSystem, path: Path, outerClass: Lazy<ClassApi>?): ClassApi {
+    val classNode = readToClassNode(path)
     val methods = classNode.methods.map { method ->
         val descriptor = MethodDescriptor.read(method.desc)
         val nonThisLocals = method.localVariables.filter { it.name != "this" }
@@ -46,14 +54,19 @@ private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
         )
     }
 
-    val (packageName,className) = classNode.name.splitFullyQualifiedName(dotQualified = false)
+    val (packageName, className) = classNode.name.splitFullyQualifiedName(dotQualified = false)
 
-
-    //TODO inner classes (inner classes are split across multiple classfiles)
-    return ClassApi(
-        packageName = packageName?.toDotQualified(), className = className.toDotQualified(),
+    // Unfortunate hack to get the outer class reference into the inner classes
+    var classApi: ClassApi? = null
+    classApi = ClassApi(
+        packageName = packageName?.toDotQualified(),
+        // For inner classes, only include the inner class name itself
+        className = className.toDotQualified().substringAfterLast('$'),
         methods = methods.toSet(), fields = fields.toSet(),
-        innerClasses = setOf(),
+        innerClasses = classNode.innerClasses.filter { it.name != classNode.name }.map {
+            readSingularClass(fs, fs.getPath(it.name + ".class"), lazy { classApi!! })
+        },
+        outerClass = outerClass,
         classType = with(classNode) {
             when {
                 isInterface -> Interface
@@ -64,6 +77,10 @@ private fun ClassApi.Companion.readSingularClass(classPath: Path): ClassApi {
             }
         },
         visibility = classNode.visibility,
-        signature = classNode.signature?.let { SignatureParser.make().parseClassSig(it) }
+        signature = classNode.signature?.let { SignatureParser.make().parseClassSig(it) },
+        isStatic = true //TODO
     )
+
+
+    return classApi
 }

@@ -16,14 +16,16 @@ interface Visible {
 /**
  * [ClassApi]es use dot.separated.format for the packageName always!
  */
-data class ClassApi(
+ class ClassApi(
     val packageName: String?,
     val className: String,
     val classType: Type,
-    val methods: Set<Method>,
-    val fields: Set<Field>,
-    val innerClasses: Set<ClassApi>,
+    val methods: Collection<Method>,
+    val fields: Collection<Field>,
+    val innerClasses: List<ClassApi>,
+    val outerClass : Lazy<ClassApi>?,
     override val visibility: ClassVisibility,
+    val isStatic: Boolean,
     val signature: ClassSignature?
 ) : Visible {
     companion object;
@@ -80,6 +82,11 @@ val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
 val Visible.isPublic get() = visibility == Visibility.Public
 val ClassApi.Method.isConstructor get() = name == "<init>"
 val ClassApi.Method.parameters get() = parameterNames.zip(descriptor.parameterDescriptors).toMap()
+    // Remove outer class references as parameters (they are passed as this$0)
+    .filter { '$' !in it.key }
 val ClassApi.Method.returnType get() = descriptor.returnDescriptor
 val ClassApi.Method.isVoid get() = returnType == ReturnDescriptor.Void
-fun ClassApi.nameAsType() = ObjectType.dotQualified(this.fullyQualifiedName)
+fun ClassApi.nameAsType() = ObjectType.dotQualified(this.fullInnerName())
+private fun ClassApi.fullInnerName() : String {
+    return if (outerClass == null) fullyQualifiedName else outerClass.value.fullInnerName() + "\$" + className
+}

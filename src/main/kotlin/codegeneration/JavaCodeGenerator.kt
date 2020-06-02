@@ -12,41 +12,9 @@ import javax.lang.model.element.Modifier
 annotation class CodeGeneratorDsl
 
 @CodeGeneratorDsl
-object JavaCodeGenerator /*: CodeGenerator */ {
-    //MethodSpec main = MethodSpec.methodBuilder("main")
-//    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-//    .returns(void.class)
-//    .addParameter(String[].class, "args")
-//    .addStatement("$T.out.println($S)", System.class, "Hello, JavaPoet!")
-//    .build();
-//
-//TypeSpec helloWorld = TypeSpec.classBuilder("HelloWorld")
-//    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-//    .addMethod(main)
-//    .build();
-//
-//JavaFile javaFile = JavaFile.builder("com.example.helloworld", helloWorld)
-//    .build();
-//
-//javaFile.writeTo(System.out);
+object JavaCodeGenerator {
 
-//    private fun <T : JavaGeneratedClass> writeClass(
-//        packageName: String,
-//        name: String,
-//        writeTo: Path,
-//        visibility: Visibility,
-//        init: T.() -> Unit,
-//        generatedClass: (TypeSpec.Builder) -> JavaGeneratedClass
-//    ) {
-//        JavaFile.builder(
-//            packageName,
-//            generatedClass(TypeSpec.classBuilder(name).apply { addModifiers(visibility.toModifier()) }).apply(init)
-//                .build()
-//        ).build().writeTo(writeTo)
-//    }
-
-
-    /*override*/ fun writeClass(
+   fun writeClass(
         packageName: String,
         name: String,
         writeTo: Path,
@@ -58,38 +26,40 @@ object JavaCodeGenerator /*: CodeGenerator */ {
         visibility: Visibility,
         init: JavaGeneratedClass.() -> Unit
     ) {
-        val builder = if (isInterface) TypeSpec.interfaceBuilder(name) else TypeSpec.classBuilder(name)
-        builder.apply {
-            visibility.toModifier()?.let { addModifiers(it) }
-            if (isAbstract) addModifiers(Modifier.ABSTRACT)
-        }
+        val generatedClass = generateClass(isInterface, name, visibility, isAbstract, init)
         JavaFile.builder(
             packageName,
-            JavaGeneratedClass(builder, isInterface).apply(init)
-                .build()
+            generatedClass.build()
         ).skipJavaLangImports(true).build().writeTo(writeTo)
     }
 
-//    /*override*/ fun writeInterface(
-//        packageName: String,
-//        name: String,
-//        writeTo: Path,
-//        visibility: Visibility = Visibility.Public,
-//        init: JavaGeneratedInterface.() -> Unit
-//    ) = writeClass(packageName, name, writeTo, visibility, init, ::JavaGeneratedInterface)
+
 
 }
 
-//TypeSpec helloWorld = TypeSpec.classBuilder("HelloWorld")
-//    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-//    .addMethod(main)
-//    .build();
+private fun generateClass(
+    isInterface: Boolean,
+    name: String,
+    visibility: Visibility,
+    isAbstract: Boolean,
+    init: JavaGeneratedClass.() -> Unit
+): TypeSpec.Builder {
+    val builder = if (isInterface) TypeSpec.interfaceBuilder(name) else TypeSpec.classBuilder(name)
+    builder.apply {
+        visibility.toModifier()?.let { addModifiers(it) }
+        if (isAbstract) addModifiers(Modifier.ABSTRACT)
+    }
+    JavaGeneratedClass(builder, isInterface).init()
+    return builder
+}
+
+
 @CodeGeneratorDsl
-open class JavaGeneratedClass(
+ class JavaGeneratedClass(
     private val typeSpec: TypeSpec.Builder,
     private val isInterface: Boolean
-) /*: GeneratedClass*/ {
-    /*override*/ fun addMethod(
+)  {
+     fun addMethod(
         name: String,
         returnType: ReturnDescriptor?,
         visibility: Visibility,
@@ -110,6 +80,25 @@ open class JavaGeneratedClass(
         }, userConfig = body)
 
     }
+
+
+    fun addInnerClass(
+        name: String,
+        isInterface: Boolean,
+        /**
+         * Interfaces are NOT considered abstract
+         */
+        isAbstract: Boolean,
+        isStatic : Boolean,
+        visibility: Visibility,
+        init: JavaGeneratedClass.() -> Unit
+    ) {
+        val generatedClass = generateClass(isInterface, name, visibility, isAbstract, init)
+        typeSpec.addType(generatedClass.apply {
+            if(isStatic) addModifiers(Modifier.STATIC)
+        }.build())
+    }
+
 
     fun addConstructor(
         visibility: Visibility,
