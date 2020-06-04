@@ -1,10 +1,7 @@
 package codegeneration
 
-import descriptor.AnyType
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
-
-
 
 
 enum class SelfConstructorType {
@@ -37,22 +34,23 @@ interface GeneratedClass {
 
 interface GeneratedInterface : GeneratedClass
 
+
 sealed class Visibility {
-    companion object {
-        val Public = ClassVisibility.Public
-        val Private = ClassVisibility.Private
-        val Package = ClassVisibility.Package
-    }
+    companion object
 
     object Protected : Visibility()
 }
-
 
 sealed class ClassVisibility : Visibility() {
     object Public : ClassVisibility()
     object Private : ClassVisibility()
     object Package : ClassVisibility()
 }
+
+
+val Visibility.Companion.Public get() = ClassVisibility.Public
+val Visibility.Companion.Private get() = ClassVisibility.Private
+val Visibility.Companion.Package get() = ClassVisibility.Package
 
 
 fun Visibility.toModifier(): Modifier? = when (this) {

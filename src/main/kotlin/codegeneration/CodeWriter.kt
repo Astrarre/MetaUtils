@@ -46,8 +46,13 @@ internal open class JavaCodeWriter : CodeWriter() {
     private fun Expression.Call.prefix(): FormattedString = when (this) {
         is Expression.Call.This -> "this".format
         is Expression.Call.Super -> "super".format
-        is Expression.Call.Method -> if (receiver == null) name.format else write(receiver as Code).mapString { "${it.withParentheses()}.$name" }
-        is Expression.Call.Constructor -> "new $TYPE_FORMAT".format(constructing.toTypeName())
+        is Expression.Call.Method -> if (receiver == null) name.format else write(receiver as Code)
+            .mapString { "${it.withParentheses()}.$name" }
+        is Expression.Call.Constructor -> {
+            val rightSide = "new $TYPE_FORMAT".format(constructing.toTypeName())
+            if (receiver == null) rightSide
+            else write(receiver).mapString { "${it.withParentheses()}." } + rightSide
+        }
     }
 
 }
@@ -79,7 +84,7 @@ internal data class FormattedString(val string: String, val formatArguments: Lis
     fun appendArg(arg: TypeName) = copy(formatArguments = formatArguments + arg)
     fun prependArg(arg: TypeName) = copy(formatArguments = listOf(arg) + formatArguments)
 
-//    operator fun plus(appended: String) = FormattedString(this.string + appended, formatArguments)
+    //    operator fun plus(appended: String) = FormattedString(this.string + appended, formatArguments)
     operator fun plus(other: FormattedString) =
         FormattedString(this.string + other.string, formatArguments + other.formatArguments)
 }

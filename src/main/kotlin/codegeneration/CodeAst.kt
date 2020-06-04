@@ -3,15 +3,16 @@ package codegeneration
 import descriptor.AnyType
 
 sealed class Code
+
 // all implementors of Receiver MUST inherit Code
 interface Receiver
 
 class ClassReceiver(val type: AnyType) : Code(), Receiver
-object SuperReceiver :   Code(), Receiver
+object SuperReceiver : Code(), Receiver
 
 sealed class Statement : Code() {
     class Return(val target: Expression) : Statement()
-    class Assignment(val target : Expression, val assignedValue : Expression) : Statement()
+    class Assignment(val target: Expression, val assignedValue: Expression) : Statement()
 }
 
 sealed class Expression : Statement(), Receiver {
@@ -22,7 +23,8 @@ sealed class Expression : Statement(), Receiver {
         class This(parameters: List<Expression>) : Call(parameters)
         class Super(parameters: List<Expression>) : Call(parameters)
         class Method(val receiver: Receiver?, val name: String, parameters: List<Expression>) : Call(parameters)
-        class Constructor(val constructing: AnyType, parameters: List<Expression>) : Call(parameters)
+        class Constructor(val receiver: Expression?, val constructing: AnyType, parameters: List<Expression>) :
+            Call(parameters)
     }
 
     object This : Expression()

@@ -17,30 +17,19 @@ fun getResource(path: String): Path = Paths.get(
         .classLoader.getResource("dummyResource")!!.toURI()
 ).parent.resolve(path)
 
-fun debugResultJar(jar: Path) {
-    val targetDir = jar.parent.resolve(jar.toFile().nameWithoutExtension)
-    targetDir.deleteRecursively()
-    unzipJar(targetDir, jar)
-}
 
-fun unzipJar(destinationDir: Path, jarPath: Path) {
-    jarPath.walkJar { paths ->
-        paths.forEach {
-            it.copyTo(destinationDir.resolve(it.toString().removePrefix("/")))
-        }
-    }
-}
+
 
 
 @DslMarker
 annotation class JarDsl
 
 @JarDsl
-fun testJar(jar: Path, init: TestJar.() -> Unit): TestJar {
+fun testJars(vararg jars:  Path, init: TestJar.() -> Unit): TestJar {
     return TestJar(
         URLClassLoader(
-            arrayOf<URL>(jar.toUri().toURL()),
-            TestJar::class.java.classLoader
+            jars.map { it.toUri().toURL() }.toTypedArray(),
+            DummyClass::class.java.classLoader
         )
     ).apply(init)
 }

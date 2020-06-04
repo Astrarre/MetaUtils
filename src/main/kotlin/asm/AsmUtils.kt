@@ -1,11 +1,11 @@
 package asm
 
-import codegeneration.ClassVisibility
-import codegeneration.Visibility
+import codegeneration.*
 import com.sun.org.apache.xpath.internal.compiler.OpCodes
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
+import org.objectweb.asm.tree.InnerClassNode
 import org.objectweb.asm.tree.MethodNode
 
 val AsmNode<*>.isInitializer
@@ -64,7 +64,7 @@ val ClassNode.isInterface get() = opCode(Opcodes.ACC_INTERFACE)
 val ClassNode.isAbstract get() = opCode(Opcodes.ACC_ABSTRACT)
 val ClassNode.isEnum get() = opCode(Opcodes.ACC_ENUM)
 val ClassNode.isAnnotation get() = opCode(Opcodes.ACC_ANNOTATION)
-val ClassNode.isStatic get() = access.static
+val ClassNode.isfinal get() = access.final
 val ClassNode.visibility: ClassVisibility
     get() = with(access) {
         when {
@@ -75,3 +75,5 @@ val ClassNode.visibility: ClassVisibility
             else -> error("Access is unexpectedly not private, protected, public, or package private...")
         }
     }
+
+val InnerClassNode.isStatic get() = access.opCode(Opcodes.ACC_STATIC)

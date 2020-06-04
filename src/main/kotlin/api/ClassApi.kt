@@ -2,6 +2,7 @@ package api
 
 import addIf
 import codegeneration.ClassVisibility
+import codegeneration.Public
 import codegeneration.Visibility
 import descriptor.*
 import sun.reflect.generics.tree.ClassSignature
@@ -26,6 +27,7 @@ interface Visible {
     val outerClass : Lazy<ClassApi>?,
     override val visibility: ClassVisibility,
     val isStatic: Boolean,
+    val isFinal: Boolean,
     val signature: ClassSignature?
 ) : Visible {
     companion object;
@@ -78,6 +80,7 @@ interface Visible {
 val ClassApi.fullyQualifiedName get() = if(packageName == null) className else "$packageName.$className"
 val ClassApi.isInterface get() = classType == ClassApi.Type.Interface
 val ClassApi.isAbstract get() = classType == ClassApi.Type.AbstractClass
+val ClassApi.isInnerClass get() = outerClass != null
 val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
 val Visible.isPublic get() = visibility == Visibility.Public
 val ClassApi.Method.isConstructor get() = name == "<init>"
@@ -87,6 +90,7 @@ val ClassApi.Method.parameters get() = parameterNames.zip(descriptor.parameterDe
 val ClassApi.Method.returnType get() = descriptor.returnDescriptor
 val ClassApi.Method.isVoid get() = returnType == ReturnDescriptor.Void
 fun ClassApi.nameAsType() = ObjectType.dotQualified(this.fullInnerName())
+fun ClassApi.innerClassNameAsType() = ObjectType.dotQualified(this.className)
 private fun ClassApi.fullInnerName() : String {
     return if (outerClass == null) fullyQualifiedName else outerClass.value.fullInnerName() + "\$" + className
 }
