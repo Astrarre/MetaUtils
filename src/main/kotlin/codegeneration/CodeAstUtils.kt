@@ -1,13 +1,12 @@
 package codegeneration
 
 import descriptor.AnyType
-import descriptor.ObjectType
+import descriptor.JavaLangObjectType
 
-private val JavaLangObject = ObjectType("java/lang/Object")
 
 private fun Expression.castTo(type: AnyType): Expression.Cast = Expression.Cast(this, type)
 fun Expression.castExpressionTo(type: AnyType, doubleCast: Boolean): Expression.Cast =
-    if (doubleCast) castTo(JavaLangObject).castTo(type) else castTo(type)
+    if (doubleCast) castTo(JavaLangObjectType).castTo(type) else castTo(type)
 
 //fun Expression.returnIf(condition: Boolean): Statement = if (condition) Statement.Return(this) else this
 //

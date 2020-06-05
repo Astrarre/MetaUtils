@@ -1,14 +1,13 @@
-import org.gradle.api.DefaultTask
+import asm.readToClassNode
+import asm.writeTo
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.bundling.Jar
-import org.gradle.api.tasks.options.Option
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 
 class MetaUtils : Plugin<Project> {
@@ -17,13 +16,12 @@ class MetaUtils : Plugin<Project> {
     }
 }
 
-
-
-
-
-
-
-
+private fun String?.toApiPackageName() = "v1/${this ?: ""}"
+private fun String.toApiClassName() = "I$this"
+private fun String.remapToApiClass(): String {
+    val (packageName, className) = splitFullyQualifiedName(dotQualified = false)
+    return "${packageName.toApiPackageName()}/${className.toApiClassName()}"
+}
 
 open class BuildMetaUtilsExtension(private val project: Project) {
     fun createJarTest(name: String): SourceSet = with(project) {
@@ -42,6 +40,40 @@ open class BuildMetaUtilsExtension(private val project: Project) {
 
         return@with sourceSet
     }
+
+    fun createAttachInterfacesTask(targetClassDirs: Set<File>): FileCollection = with(project) {
+        val targetClassDir = targetClassDirs.first { it.parentFile.name == "java" }
+        val targetClassPath = targetClassDir.toPath()
+        val destinationJar = project.file("build/resources/test/mcJarWithInterfaces.jar")
+        tasks.create("attachInterfaces") { task ->
+            task.doLast {
+                val allInputs = targetClassPath.recursiveChildren().filter { !it.isDirectory() }.toList()
+                val outputDir = File(targetClassDir.parentFile, targetClassDir.nameWithoutExtension + "WithInterfaces")
+                    .toPath()
+                val outputsToInputs = allInputs.associateBy { path ->
+                    val relativePath = targetClassPath.relativize(path).toString()
+                    outputDir.resolve(relativePath)
+                }
+                for ((output, input) in outputsToInputs) {
+                    val classNode = readToClassNode(input)
+                    if (classNode.name.startsWith("net/minecraft/")) {
+                        val newName = classNode.name.remapToApiClass()
+                        classNode.interfaces.add(newName)
+
+                        println("Attaching interface $newName to ${classNode.name}")
+                    }
+
+                    output.parent.createDirectories()
+
+                    classNode.writeTo(output)
+                }
+
+                outputDir.zipToJar(destination = destinationJar.toPath())
+            }
+        }
+        files(destinationJar)
+    }
+
 }
 
 private val Project.sourceSets: SourceSetContainer

@@ -14,7 +14,7 @@ annotation class CodeGeneratorDsl
 @CodeGeneratorDsl
 object JavaCodeGenerator {
 
-   fun writeClass(
+    fun writeClass(
         packageName: String,
         name: String,
         writeTo: Path,
@@ -24,15 +24,16 @@ object JavaCodeGenerator {
          */
         isAbstract: Boolean,
         visibility: Visibility,
+        superClass : AnyType?,
+        superInterfaces: List<AnyType>,
         init: JavaGeneratedClass.() -> Unit
     ) {
-        val generatedClass = generateClass(isInterface, name, visibility, isAbstract, init)
+        val generatedClass = generateClass(isInterface, name, visibility, isAbstract,superClass, superInterfaces, init)
         JavaFile.builder(
             packageName,
             generatedClass.build()
         ).skipJavaLangImports(true).build().writeTo(writeTo)
     }
-
 
 
 }
@@ -42,12 +43,16 @@ private fun generateClass(
     name: String,
     visibility: Visibility,
     isAbstract: Boolean,
+    superClass: AnyType?,
+    superInterfaces: List<AnyType>,
     init: JavaGeneratedClass.() -> Unit
 ): TypeSpec.Builder {
     val builder = if (isInterface) TypeSpec.interfaceBuilder(name) else TypeSpec.classBuilder(name)
     builder.apply {
         visibility.toModifier()?.let { addModifiers(it) }
         if (isAbstract) addModifiers(Modifier.ABSTRACT)
+        if (superClass != null) superclass(superClass.toTypeName())
+        for (superInterface in superInterfaces) addSuperinterface(superInterface.toTypeName())
     }
     JavaGeneratedClass(builder, isInterface).init()
     return builder
@@ -55,11 +60,11 @@ private fun generateClass(
 
 
 @CodeGeneratorDsl
- class JavaGeneratedClass(
+class JavaGeneratedClass(
     private val typeSpec: TypeSpec.Builder,
     private val isInterface: Boolean
-)  {
-     fun addMethod(
+) {
+    fun addMethod(
         name: String,
         returnType: ReturnDescriptor?,
         visibility: Visibility,
@@ -89,13 +94,15 @@ private fun generateClass(
          * Interfaces are NOT considered abstract
          */
         isAbstract: Boolean,
-        isStatic : Boolean,
+        isStatic: Boolean,
         visibility: Visibility,
+        superClass: AnyType?,
+        superInterfaces: List<AnyType>,
         init: JavaGeneratedClass.() -> Unit
     ) {
-        val generatedClass = generateClass(isInterface, name, visibility, isAbstract, init)
+        val generatedClass = generateClass(isInterface, name, visibility, isAbstract, superClass, superInterfaces, init)
         typeSpec.addType(generatedClass.apply {
-            if(isStatic) addModifiers(Modifier.STATIC)
+            if (isStatic) addModifiers(Modifier.STATIC)
         }.build())
     }
 

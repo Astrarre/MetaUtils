@@ -1,12 +1,26 @@
 package asm
 
 import codegeneration.*
-import com.sun.org.apache.xpath.internal.compiler.OpCodes
+import inputStream
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.InnerClassNode
 import org.objectweb.asm.tree.MethodNode
+import writeBytes
+import java.nio.file.Path
+
+
+fun readToClassNode(classFile: Path): ClassNode = classFile.inputStream().use { stream ->
+    ClassNode().also { ClassReader(stream).accept(it, 0) }
+}
+
+fun readToClassNode(bytes: ByteArray): ClassNode = ClassNode().also { ClassReader(bytes).accept(it, 0) }
+
+fun ClassNode.toBytes(): ByteArray = ClassWriter(0).also { accept(it) }.toByteArray()
+fun ClassNode.writeTo(path: Path) = path.writeBytes(toBytes())
 
 val AsmNode<*>.isInitializer
     get() = when (this) {

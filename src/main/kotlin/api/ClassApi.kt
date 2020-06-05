@@ -21,6 +21,8 @@ interface Visible {
     val packageName: String?,
     val className: String,
     val classType: Type,
+    val superClass : AnyType?,
+    val superInterfaces : List<AnyType>,
     val methods: Collection<Method>,
     val fields: Collection<Field>,
     val innerClasses: List<ClassApi>,

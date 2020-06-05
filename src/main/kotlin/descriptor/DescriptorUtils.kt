@@ -7,3 +7,6 @@ fun <T : Descriptor> T.remap(mapper : (className: String) -> String?): T = when 
     is MethodDescriptor -> this.copy(parameterDescriptors.map { it.remap(mapper) }, returnDescriptor.remap(mapper))
     else -> error("Impossible")
 } as T
+
+const val JavaLangObject = "java/lang/Object"
+val JavaLangObjectType = ObjectType(JavaLangObject)

@@ -5,14 +5,11 @@ import api.ClassApi.Type.Annotation
 import api.ClassApi.Type.Enum
 import applyIf
 import asm.*
-import descriptor.FieldDescriptor
-import descriptor.MethodDescriptor
-import descriptor.read
+import descriptor.*
 import exists
 import hasExtension
 import isClassfile
 import openJar
-import readToClassNode
 import splitFullyQualifiedName
 import sun.reflect.generics.parser.SignatureParser
 import toDotQualified
@@ -41,30 +38,31 @@ private fun ClassApi.Companion.readSingularClass(
     outerClass: Lazy<ClassApi>?,
     isStatic: Boolean
 ): ClassApi {
-    if (!path.exists()) {
-        val x = 2
-    }
+
     val classNode = readToClassNode(path)
     val methods = classNode.methods.map { method ->
         val descriptor = MethodDescriptor.read(method.desc)
 
         val locals = method.localVariables
-        val parameterNames = if (locals != null) {
-            val nonThisLocalNames = locals.filter { it.name != "this" }.map { it.name }
-            // Enums pass the name and ordinal into the constructor as well
-            val namesWithEnum = nonThisLocalNames.applyIf(classNode.isEnum) {
-                listOf("\$enum\$name", "\$enum\$ordinal") + it
+        val parameterNames = when {
+            method.parameters != null -> {
+                // Some methods use a parameter names field instead of local variables
+                method.parameters.map { it.name }
             }
+            locals != null -> {
+                val nonThisLocalNames = locals.filter { it.name != "this" }.map { it.name }
+                // Enums pass the name and ordinal into the constructor as well
+                val namesWithEnum = nonThisLocalNames.applyIf(classNode.isEnum) {
+                    listOf("\$enum\$name", "\$enum\$ordinal") + it
+                }
 
-            check(namesWithEnum.size >= descriptor.parameterDescriptors.size) {
-                "There was not enough (${method.localVariables.size}) local variable debug information for all parameters" +
-                        " (${descriptor.parameterDescriptors.size} of them) in method ${method.name}"
+                check(namesWithEnum.size >= descriptor.parameterDescriptors.size) {
+                    "There was not enough (${namesWithEnum.size}) local variable debug information for all parameters" +
+                            " (${descriptor.parameterDescriptors.size} of them) in method ${method.name}"
+                }
+                namesWithEnum.take(descriptor.parameterDescriptors.size).map { it }
             }
-            namesWithEnum.take(descriptor.parameterDescriptors.size).map { it }
-        } else {
-            // abstract methods use a parameter names field instead of local variables
-            if (method.parameters == null) listOf()
-            else method.parameters.map { it.name }
+            else -> listOf()
         }
 
         val visibility = method.visibility
@@ -92,12 +90,14 @@ private fun ClassApi.Companion.readSingularClass(
         packageName = packageName?.toDotQualified(),
         // For inner classes, only include the inner class name itself
         className = className.toDotQualified().substringAfterLast('$'),
+        superClass = if (classNode.superName == JavaLangObject) null else ObjectType(classNode.superName),
+        superInterfaces = classNode.interfaces.map { ObjectType(it) },
         methods = methods.toSet(), fields = fields.toSet(),
         innerClasses = classNode.innerClasses
             .filter { innerClassShortName != it.name.innerClassShortName() }
             .map {
                 readSingularClass(fs, fs.getPath(it.name + ".class"), lazy { classApi!! }, isStatic = it.isStatic)
-        },
+            },
         outerClass = outerClass,
         classType = with(classNode) {
             when {
