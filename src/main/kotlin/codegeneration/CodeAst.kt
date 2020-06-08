@@ -2,7 +2,9 @@ package codegeneration
 
 import descriptor.JvmType
 
-sealed class Code
+sealed class Code{
+    override fun toString(): String  = JavaCodeWriter().write(this).string
+}
 
 // all implementors of Receiver MUST inherit Code
 interface Receiver

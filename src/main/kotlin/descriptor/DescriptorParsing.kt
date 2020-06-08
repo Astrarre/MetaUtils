@@ -10,7 +10,7 @@ fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
     { "'$descriptor' is not a descriptor: A field descriptor must be basic, an array ([), or a class (L)" }
 
     // I am unhappy substring copies the entire string
-    return ObjectType(descriptor.substring(1, descriptor.length - 1))
+    return ObjectType(descriptor.substring(1, descriptor.length - 1), dotQualified = false)
 }
 
 private val baseTypesMap = mapOf(

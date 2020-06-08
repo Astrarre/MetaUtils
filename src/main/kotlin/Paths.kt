@@ -1,5 +1,3 @@
-import org.objectweb.asm.ClassReader
-import org.objectweb.asm.tree.ClassNode
 import java.io.InputStream
 import java.nio.file.*
 import java.util.jar.JarOutputStream
@@ -62,22 +60,19 @@ fun Path.copyTo(target: Path, overwrite: Boolean = true): Path? {
     return Files.copy(this, target, *args)
 }
 
-fun getJvmBootClasses() : List<Path> = System.getProperty("sun.boot.class.path").split(';').map { it.toPath() }
+//fun getJvmBootClasses(): List<Path> = if (System.getProperty("java.version").toInt() <= 8) {
+//    System.getProperty("sun.boot.class.path").split(';').map { it.toPath() }
+//} else listOf<Path>() // It's part of class.path in jdk9+
 
 fun String.toPath(): Path = Paths.get(this)
-
 
 
 fun String.addIf(boolean: Boolean) = if (boolean) this else ""
 fun <T> T.applyIf(boolean: Boolean, apply: (T) -> T) = if (boolean) apply(this) else this
 
-data class FullyQualifiedName(val packageName: String?, val className: String)
-
-fun String.splitFullyQualifiedName(dotQualified: Boolean = true): FullyQualifiedName {
-    val delimiter = if (dotQualified) '.' else '/'
-    val splitIndex = lastIndexOf(delimiter)
-    return if (splitIndex == -1) FullyQualifiedName(packageName = null, className = this)
-    else FullyQualifiedName(packageName = substring(0, splitIndex), className = substring(splitIndex + 1))
+fun <T : Any?> T.prependTo(list: List<T>): List<T> {
+    val appendedList = ArrayList<T>(list.size + 1)
+    appendedList.add(this)
+    appendedList.addAll(list)
+    return appendedList
 }
-
-fun String.toDotQualified() = replace('/', '.')

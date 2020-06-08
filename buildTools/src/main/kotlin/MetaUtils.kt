@@ -8,7 +8,6 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
 import java.io.File
-import java.util.ArrayList
 
 
 class MetaUtils : Plugin<Project> {
@@ -20,8 +19,9 @@ class MetaUtils : Plugin<Project> {
 private fun String?.toApiPackageName() = "v1/${this ?: ""}"
 private fun String.toApiClassName() = "I$this"
 private fun String.remapToApiClass(): String {
-    val (packageName, className) = splitFullyQualifiedName(dotQualified = false)
-    return "${packageName.toApiPackageName()}/${className.toApiClassName()}"
+    val (packageName, className) = toQualifiedName(dotQualified = false)
+    checkNotNull(packageName)
+    return "${packageName.toSlashQualified().toApiPackageName()}/${className.toFullString().toApiClassName()}"
 }
 
 //class X : ArrayList<String>()

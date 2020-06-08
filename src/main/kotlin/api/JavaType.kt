@@ -1,6 +1,5 @@
 package api
 
-import descriptor.JvmType
 import descriptor.ObjectType
 
 //data class GenericBounds(val lower: List<JavaType>, val upper: List<JavaType>, val annotations: List<JvmType>)
@@ -8,9 +7,10 @@ data class GenericDeclaration(val name: String, val upperBounds: List<JavaType>,
 
 sealed class GenericJavaType {
     abstract val annotations: List<ObjectType>
+
     data class Wildcard(
-        val lowerBounds: List<JavaType>,
-        val upperBounds: List<JavaType>,
+        val bound: JavaType,
+        val boundsAreUpper: Boolean,
         override val annotations: List<ObjectType>
     ) : GenericJavaType()
 }

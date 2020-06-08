@@ -58,42 +58,49 @@ internal open class JavaCodeWriter : CodeWriter() {
 
 }
 
-//private fun ObjectType.toTypeName(): ClassName {
+private fun ObjectType.toTypeName(): ClassName {
 //    val className = simpleName()
 //    val innerClassSplit = className.split("\$")
 //    val rootClass = innerClassSplit[0]
 //    val innerClasses = innerClassSplit.drop(1)
-//    return ClassName.get(packageName(), rootClass, *innerClasses.toTypedArray())
-//}
-//
-//private fun JvmType.toTypeName(): TypeName = when (this) {
-//    PrimitiveType.Byte -> TypeName.BYTE
-//    PrimitiveType.Char -> TypeName.CHAR
-//    PrimitiveType.Double -> TypeName.DOUBLE
-//    PrimitiveType.Float -> TypeName.FLOAT
-//    PrimitiveType.Int -> TypeName.INT
-//    PrimitiveType.Long -> TypeName.LONG
-//    PrimitiveType.Short -> TypeName.SHORT
-//    PrimitiveType.Boolean -> TypeName.BOOLEAN
-//    is ObjectType -> this.toTypeName()
-//    is ArrayType -> ArrayTypeName.of(componentType.toTypeName())
-//}
-//
-//internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
-//    is JvmType -> toTypeName()
-//    ReturnDescriptor.Void -> TypeName.VOID
-//}
-//
-//internal fun GenericJavaType.toTypeName(): TypeName = when (this) {
-//    //TODO: annotations with annotated()
-//    is JavaType.Generic -> with(declaration) {
-//        TypeVariableName.get(name, *upperBounds.map { it.toTypeName() }.toTypedArray())
-//    }
-//    is JavaType.Class<*> -> if(typeArguments.isEmpty()) rawType.toTypeName() else {
-//        ParameterizedTypeName.get(rawType.toTypeName(), *typeArguments.map { it.toTypeName() }.toTypedArray())
-//    }
-//    is GenericJavaType.Wildcard -> WildcardTypeName.get(WildcardTypeName.)
-//}
+    val shortName = fullClassName.shortName
+    return ClassName.get(
+        fullClassName.packageName?.toDotQualified() ?: "", shortName.outerClass(),
+        *shortName.innerClasses().toTypedArray()
+    )
+}
+
+private fun JvmType.toTypeName(): TypeName = when (this) {
+    PrimitiveType.Byte -> TypeName.BYTE
+    PrimitiveType.Char -> TypeName.CHAR
+    PrimitiveType.Double -> TypeName.DOUBLE
+    PrimitiveType.Float -> TypeName.FLOAT
+    PrimitiveType.Int -> TypeName.INT
+    PrimitiveType.Long -> TypeName.LONG
+    PrimitiveType.Short -> TypeName.SHORT
+    PrimitiveType.Boolean -> TypeName.BOOLEAN
+    is ObjectType -> this.toTypeName()
+    is ArrayType -> ArrayTypeName.of(componentType.toTypeName())
+}
+
+internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
+    is JvmType -> toTypeName()
+    ReturnDescriptor.Void -> TypeName.VOID
+}
+
+internal fun GenericJavaType.toTypeName(): TypeName = when (this) {
+    //TODO: annotations with annotated()
+    is JavaType.Generic -> with(declaration) {
+        TypeVariableName.get(name, *upperBounds.map { it.toTypeName() }.toTypedArray())
+    }
+    is JavaType.Class<*> -> if (typeArguments.isEmpty()) rawType.toTypeName() else {
+        ParameterizedTypeName.get(rawType.toTypeName(), *typeArguments.map { it.toTypeName() }.toTypedArray())
+    }
+    is GenericJavaType.Wildcard -> {
+        val boundType = bound.toTypeName()
+        if (boundsAreUpper) WildcardTypeName.subtypeOf(boundType) else WildcardTypeName.supertypeOf(boundType)
+    }
+}
 
 //TODO: replace with normal string?
 internal data class FormattedString(val string: String, val formatArguments: List<TypeName>) {

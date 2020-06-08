@@ -1,6 +1,8 @@
 package codegeneration
 
 
+import QualifiedName
+import ShortClassName
 import api.JavaType
 import api.SuperType
 import com.squareup.javapoet.*
@@ -17,8 +19,7 @@ annotation class CodeGeneratorDsl
 object JavaCodeGenerator {
 
     fun writeClass(
-        packageName: String,
-        name: String,
+       name : QualifiedName,
         writeTo: Path,
         isInterface: Boolean,
         /**
@@ -30,9 +31,9 @@ object JavaCodeGenerator {
         superInterfaces: List<SuperType>,
         init: JavaGeneratedClass.() -> Unit
     ) {
-        val generatedClass = generateClass(isInterface, name, visibility, isAbstract,superClass, superInterfaces, init)
+        val generatedClass = generateClass(isInterface, name.shortName.outerClass(), visibility, isAbstract,superClass, superInterfaces, init)
         JavaFile.builder(
-            packageName,
+            name.packageName?.toDotQualified() ?: "",
             generatedClass.build()
         ).skipJavaLangImports(true).build().writeTo(writeTo)
     }

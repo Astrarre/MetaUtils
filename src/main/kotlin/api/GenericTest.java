@@ -11,9 +11,9 @@ public class GenericTest<@Nullable T extends Object & Comparable> extends ArrayL
     @ Nullable Integer x;
     List<?> y;
 
-    <U> U x(@NonNls @Nullable List<@Nullable ? super Object> foo){
-        List<?> bar = new ArrayList<>();
-    }
+//    <U> U x(List<@Nullable ? extends Object & Comparable> foo){
+//        List<?> bar = new ArrayList<>();
+//    }
 
     T f(@Nullable T param){
         @Nullable T x = null;

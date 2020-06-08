@@ -6,13 +6,10 @@ import api.ClassApi.Type.Enum
 import applyIf
 import asm.*
 import descriptor.*
-import exists
 import hasExtension
 import isClassfile
 import openJar
-import splitFullyQualifiedName
-import sun.reflect.generics.parser.SignatureParser
-import toDotQualified
+import toQualifiedName
 import walk
 import java.nio.file.FileSystem
 import java.nio.file.Path
@@ -70,31 +67,35 @@ private fun ClassApi.Companion.readSingularClass(
         ClassApi.Method(
             name = method.name, descriptor = descriptor, isStatic = method.isStatic,
             parameterNames = parameterNames,
-            visibility = visibility,
-            signature = method.signature?.let { SignatureParser.make().parseMethodSig(it) }
+            visibility = visibility
+//            signature = method.signature?.let { SignatureParser.make().parseMethodSig(it) }
         )
     }
     val fields = classNode.fields.map { field ->
-        ClassApi.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility, field.isFinal,
-            signature = field.signature?.let { SignatureParser.make().parseTypeSig(it) }
+        ClassApi.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility, field.isFinal
+//            signature = field.signature?.let { SignatureParser.make().parseTypeSig(it) }
         )
     }
 
-    val (packageName, className) = classNode.name.splitFullyQualifiedName(dotQualified = false)
+    val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
 
-    val innerClassShortName = className.innerClassShortName()
+    val innerClassShortName = with(fullClassName.shortName.components) { if(size == 1) null else last() }
 
     // Unfortunate hack to get the outer class reference into the inner classes
     var classApi: ClassApi? = null
     classApi = ClassApi(
-        packageName = packageName?.toDotQualified(),
-        // For inner classes, only include the inner class name itself
-        className = className.toDotQualified().substringAfterLast('$'),
-        superClass = if (classNode.superName == JavaLangObject) null else ObjectType(classNode.superName),
-        superInterfaces = classNode.interfaces.map { ObjectType(it) },
+        name = fullClassName,
+//        packageName = packageName?.toDotQualified(),
+//        className = fullClassName.toDotQualified().substringAfterLast('$'),
+        //TODO: more precise translation with annotations and generics
+        superClass = if (classNode.superName == JavaLangObjectString) null else {
+            SuperType(ObjectType(classNode.superName, dotQualified = false), listOf(), listOf())
+        },
+        superInterfaces = classNode.interfaces.map { SuperType(ObjectType(it, dotQualified = false),
+            listOf(), listOf()) },
         methods = methods.toSet(), fields = fields.toSet(),
         innerClasses = classNode.innerClasses
-            .filter { innerClassShortName != it.name.innerClassShortName() }
+            .filter { innerClassShortName != it.innerName && it.outerName == classNode.name}
             .map {
                 readSingularClass(fs, fs.getPath(it.name + ".class"), lazy { classApi!! }, isStatic = it.isStatic)
             },
@@ -109,7 +110,7 @@ private fun ClassApi.Companion.readSingularClass(
             }
         },
         visibility = classNode.visibility,
-        signature = classNode.signature?.let { SignatureParser.make().parseClassSig(it) },
+//        signature = classNode.signature?.let { SignatureParser.make().parseClassSig(it) },
         isStatic = isStatic,
         isFinal = classNode.isfinal
     )
