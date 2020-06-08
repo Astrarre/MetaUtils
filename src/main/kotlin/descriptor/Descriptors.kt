@@ -2,7 +2,7 @@ package descriptor
 
 // Comes directly from the spec https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.2
 typealias FieldDescriptor = FieldType
-typealias AnyType = FieldType
+typealias JvmType = FieldType
 
 
 sealed class Descriptor(val classFileName: String) {

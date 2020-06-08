@@ -1,7 +1,8 @@
 package codegeneration
 
-import com.squareup.javapoet.ClassName
-import com.squareup.javapoet.TypeName
+import api.GenericJavaType
+import api.JavaType
+import com.squareup.javapoet.*
 import descriptor.*
 
 internal sealed class CodeWriter {
@@ -57,26 +58,42 @@ internal open class JavaCodeWriter : CodeWriter() {
 
 }
 
-private fun ObjectType.toClassName(): ClassName {
-    val className = simpleName()
-    val innerClassSplit = className.split("\$")
-    val rootClass = innerClassSplit[0]
-    val innerClasses = innerClassSplit.drop(1)
-    return ClassName.get(packageName(), rootClass, *innerClasses.toTypedArray())
-}
-
-private fun AnyType.toTypeName(): TypeName = when (this) {
-    PrimitiveType.Byte -> TypeName.BYTE
-    PrimitiveType.Char -> TypeName.CHAR
-    PrimitiveType.Double -> TypeName.DOUBLE
-    PrimitiveType.Float -> TypeName.FLOAT
-    PrimitiveType.Int -> TypeName.INT
-    PrimitiveType.Long -> TypeName.LONG
-    PrimitiveType.Short -> TypeName.SHORT
-    PrimitiveType.Boolean -> TypeName.BOOLEAN
-    is ObjectType -> this.toClassName()
-    is ArrayType -> com.squareup.javapoet.ArrayTypeName.of(componentType.toTypeName())
-}
+//private fun ObjectType.toTypeName(): ClassName {
+//    val className = simpleName()
+//    val innerClassSplit = className.split("\$")
+//    val rootClass = innerClassSplit[0]
+//    val innerClasses = innerClassSplit.drop(1)
+//    return ClassName.get(packageName(), rootClass, *innerClasses.toTypedArray())
+//}
+//
+//private fun JvmType.toTypeName(): TypeName = when (this) {
+//    PrimitiveType.Byte -> TypeName.BYTE
+//    PrimitiveType.Char -> TypeName.CHAR
+//    PrimitiveType.Double -> TypeName.DOUBLE
+//    PrimitiveType.Float -> TypeName.FLOAT
+//    PrimitiveType.Int -> TypeName.INT
+//    PrimitiveType.Long -> TypeName.LONG
+//    PrimitiveType.Short -> TypeName.SHORT
+//    PrimitiveType.Boolean -> TypeName.BOOLEAN
+//    is ObjectType -> this.toTypeName()
+//    is ArrayType -> ArrayTypeName.of(componentType.toTypeName())
+//}
+//
+//internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
+//    is JvmType -> toTypeName()
+//    ReturnDescriptor.Void -> TypeName.VOID
+//}
+//
+//internal fun GenericJavaType.toTypeName(): TypeName = when (this) {
+//    //TODO: annotations with annotated()
+//    is JavaType.Generic -> with(declaration) {
+//        TypeVariableName.get(name, *upperBounds.map { it.toTypeName() }.toTypedArray())
+//    }
+//    is JavaType.Class<*> -> if(typeArguments.isEmpty()) rawType.toTypeName() else {
+//        ParameterizedTypeName.get(rawType.toTypeName(), *typeArguments.map { it.toTypeName() }.toTypedArray())
+//    }
+//    is GenericJavaType.Wildcard -> WildcardTypeName.get(WildcardTypeName.)
+//}
 
 //TODO: replace with normal string?
 internal data class FormattedString(val string: String, val formatArguments: List<TypeName>) {
@@ -96,15 +113,10 @@ private val String.format get() = FormattedString(this, listOf())
 private fun String.format(args: List<TypeName>) = FormattedString(this, args)
 private fun String.format(arg: TypeName) = FormattedString(this, listOf(arg))
 
-private fun SelfConstructorType.toJavaCode() = when (this) {
-    SelfConstructorType.This -> "this"
-    SelfConstructorType.Super -> "super"
-}
-
-internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
-    is AnyType -> toTypeName()
-    ReturnDescriptor.Void -> TypeName.VOID
-}
+//private fun SelfConstructorType.toJavaCode() = when (this) {
+//    SelfConstructorType.This -> "this"
+//    SelfConstructorType.Super -> "super"
+//}
 
 
 private const val TYPE_FORMAT = "\$T"

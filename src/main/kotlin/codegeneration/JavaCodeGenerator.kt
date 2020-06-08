@@ -1,8 +1,10 @@
 package codegeneration
 
 
+import api.JavaType
+import api.SuperType
 import com.squareup.javapoet.*
-import descriptor.AnyType
+import descriptor.JvmType
 import descriptor.ObjectType
 import descriptor.ReturnDescriptor
 import java.nio.file.Path
@@ -24,8 +26,8 @@ object JavaCodeGenerator {
          */
         isAbstract: Boolean,
         visibility: Visibility,
-        superClass : AnyType?,
-        superInterfaces: List<AnyType>,
+        superClass : SuperType?,
+        superInterfaces: List<SuperType>,
         init: JavaGeneratedClass.() -> Unit
     ) {
         val generatedClass = generateClass(isInterface, name, visibility, isAbstract,superClass, superInterfaces, init)
@@ -43,8 +45,8 @@ private fun generateClass(
     name: String,
     visibility: Visibility,
     isAbstract: Boolean,
-    superClass: AnyType?,
-    superInterfaces: List<AnyType>,
+    superClass: SuperType?,
+    superInterfaces: List<SuperType>,
     init: JavaGeneratedClass.() -> Unit
 ): TypeSpec.Builder {
     val builder = if (isInterface) TypeSpec.interfaceBuilder(name) else TypeSpec.classBuilder(name)
@@ -71,7 +73,7 @@ class JavaGeneratedClass(
         abstract: Boolean,
         static: Boolean,
         final: Boolean,
-        parameters: Map<String, AnyType>,
+        parameters: Map<String, JvmType>,
         body: JavaGeneratedMethod.() -> Unit
     ) {
         addMethodImpl(visibility, parameters, MethodSpec.methodBuilder(name), internalConfig = {
@@ -96,8 +98,8 @@ class JavaGeneratedClass(
         isAbstract: Boolean,
         isStatic: Boolean,
         visibility: Visibility,
-        superClass: AnyType?,
-        superInterfaces: List<AnyType>,
+        superClass: SuperType?,
+        superInterfaces: List<SuperType>,
         init: JavaGeneratedClass.() -> Unit
     ) {
         val generatedClass = generateClass(isInterface, name, visibility, isAbstract, superClass, superInterfaces, init)
@@ -109,7 +111,7 @@ class JavaGeneratedClass(
 
     fun addConstructor(
         visibility: Visibility,
-        parameters: Map<String, AnyType>,
+        parameters: Map<String, JvmType>,
         init: JavaGeneratedMethod.() -> Unit
     ) {
         require(!isInterface) { "Interfaces don't have constructors" }
@@ -118,7 +120,7 @@ class JavaGeneratedClass(
 
     private fun addMethodImpl(
         visibility: Visibility,
-        parameters: Map<String, AnyType>,
+        parameters: Map<String, JvmType>,
         builder: MethodSpec.Builder,
         internalConfig: MethodSpec.Builder.() -> Unit,
         userConfig: JavaGeneratedMethod.() -> Unit
@@ -140,7 +142,7 @@ class JavaGeneratedClass(
 
     /*override*/  fun addField(
         name: String,
-        type: AnyType,
+        type: JvmType,
         visibility: Visibility,
         static: Boolean,
         final: Boolean,

@@ -8,6 +8,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
 import java.io.File
+import java.util.ArrayList
 
 
 class MetaUtils : Plugin<Project> {
@@ -22,6 +23,8 @@ private fun String.remapToApiClass(): String {
     val (packageName, className) = splitFullyQualifiedName(dotQualified = false)
     return "${packageName.toApiPackageName()}/${className.toApiClassName()}"
 }
+
+//class X : ArrayList<String>()
 
 open class BuildMetaUtilsExtension(private val project: Project) {
     fun createJarTest(name: String): SourceSet = with(project) {

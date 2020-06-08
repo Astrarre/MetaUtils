@@ -21,8 +21,8 @@ interface Visible {
     val packageName: String?,
     val className: String,
     val classType: Type,
-    val superClass : AnyType?,
-    val superInterfaces : List<AnyType>,
+    val superClass : SuperType?,
+    val superInterfaces : List<SuperType>,
     val methods: Collection<Method>,
     val fields: Collection<Field>,
     val innerClasses: List<ClassApi>,
@@ -93,6 +93,6 @@ val ClassApi.Method.returnType get() = descriptor.returnDescriptor
 val ClassApi.Method.isVoid get() = returnType == ReturnDescriptor.Void
 fun ClassApi.nameAsType() = ObjectType.dotQualified(this.fullInnerName())
 fun ClassApi.innerClassNameAsType() = ObjectType.dotQualified(this.className)
-private fun ClassApi.fullInnerName() : String {
+ fun ClassApi.fullInnerName() : String {
     return if (outerClass == null) fullyQualifiedName else outerClass.value.fullInnerName() + "\$" + className
 }

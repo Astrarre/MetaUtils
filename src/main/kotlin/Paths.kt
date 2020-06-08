@@ -62,6 +62,10 @@ fun Path.copyTo(target: Path, overwrite: Boolean = true): Path? {
     return Files.copy(this, target, *args)
 }
 
+fun getJvmBootClasses() : List<Path> = System.getProperty("sun.boot.class.path").split(';').map { it.toPath() }
+
+fun String.toPath(): Path = Paths.get(this)
+
 
 
 fun String.addIf(boolean: Boolean) = if (boolean) this else ""

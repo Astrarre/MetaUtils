@@ -1,11 +1,11 @@
 package codegeneration
 
-import descriptor.AnyType
+import descriptor.JvmType
 import descriptor.JavaLangObjectType
 
 
-private fun Expression.castTo(type: AnyType): Expression.Cast = Expression.Cast(this, type)
-fun Expression.castExpressionTo(type: AnyType, doubleCast: Boolean): Expression.Cast =
+private fun Expression.castTo(type: JvmType): Expression.Cast = Expression.Cast(this, type)
+fun Expression.castExpressionTo(type: JvmType, doubleCast: Boolean): Expression.Cast =
     if (doubleCast) castTo(JavaLangObjectType).castTo(type) else castTo(type)
 
 //fun Expression.returnIf(condition: Boolean): Statement = if (condition) Statement.Return(this) else this
