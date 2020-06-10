@@ -39,11 +39,11 @@ fun Path.unzipJar(
     return destination
 }
 
-fun Path.zipToJar(destination: Path = parent.resolve("$fileName.jar"), overwrite: Boolean = true): Path {
+fun Path.convertDirToJar(destination: Path = parent.resolve("$fileName.jar"), overwrite: Boolean = true): Path {
     if (overwrite) destination.deleteIfExists()
     destination.createJar()
     destination.openJar { destJar ->
-        walk().forEach {
+        this.walk().forEach {
             val relativePath = this.relativize(it)
             if (relativePath.toString().isEmpty()) return@forEach
             val targetPath = destJar.getPath(relativePath.toString())

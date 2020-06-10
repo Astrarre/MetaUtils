@@ -71,7 +71,7 @@ open class BuildMetaUtilsExtension(private val project: Project) {
                     classNode.writeTo(output)
                 }
 
-                outputDir.zipToJar(destination = destinationJar.toPath())
+                outputDir.convertDirToJar(destination = destinationJar.toPath())
             }
         }
         files(destinationJar)
