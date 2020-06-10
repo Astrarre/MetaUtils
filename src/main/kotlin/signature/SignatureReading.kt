@@ -35,7 +35,7 @@ private class SignatureReader(private val signature: String) {
         val formalTypeParameters = if (current() == '<') readFormalTypeParameters() else null
         advance('(')
         val parameterTypes = readRepeatedly(until = { current() == ')' }, reader = { readTypeSignature() }, skip = true)
-        val returnType = if (current() == 'V') ReturnType.Void.also { advance() } else readTypeSignature()
+        val returnType = if (current() == 'V') GenericReturnType.Void.also { advance() } else readTypeSignature()
         val throws = readRepeatedly(
             until = { progressPointer == signature.length },
             reader = { readThrowsSignature() },
@@ -139,8 +139,8 @@ private class SignatureReader(private val signature: String) {
         return readFieldTypeSignature()
     }
 
-    private fun readPrimitiveSignature(): PrimitiveTypeForGenerics? = baseTypesCharMap[current()]?.let {
-        PrimitiveTypeForGenerics(it).also { advance() }
+    private fun readPrimitiveSignature(): GenericsPrimitiveType? = baseTypesCharMap[current()]?.let {
+        GenericsPrimitiveType(it).also { advance() }
     }
 
     private fun readTypeVariableSignature(): TypeVariable {

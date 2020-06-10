@@ -1,23 +1,44 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package signature
 
 import QualifiedName
 import ShortClassName
-import descriptor.remap
+import api.JavaClassType
+import api.JavaType
+import descriptor.*
 import toQualifiedName
 
 //val ClassSignature.superTypes get() = superInterfaces + superClass
-fun ClassGenericType.Companion.fromRawClassString(string: String, dotQualified: Boolean = false): ClassGenericType {
-    val name = string.toQualifiedName(dotQualified)
-    return ClassGenericType(name.packageName, name.shortName.components.map { SimpleClassGenericType(it, null) })
-}
 
-fun <T : GenericTypeOrPrimitive> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
-    is PrimitiveTypeForGenerics -> copy(primitive.remap(mapper))
+
+fun <T : GenericReturnType> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
+    is GenericsPrimitiveType -> copy(primitive.remap(mapper))
     is ClassGenericType -> remap(mapper)
     is TypeVariable -> this
-    is ArrayGenericType -> copy(type.remap(mapper))
+    is ArrayGenericType -> copy(componentType.remap(mapper))
+    GenericReturnType.Void -> GenericReturnType.Void
     else -> error("impossible")
 } as T
+
+
+@OptIn(ExperimentalStdlibApi::class)
+fun GenericReturnType.getContainedClassesRecursively(): List<ClassGenericType> =
+    buildList { visitContainedClasses { add(it) } }
+
+fun GenericReturnType.visitContainedClasses(visitor: (ClassGenericType) -> Unit): Unit = when (this) {
+    is GenericsPrimitiveType, is TypeVariable, GenericReturnType.Void -> {
+    }
+    is ClassGenericType -> {
+        visitor(this)
+        for (className in classNameChain) {
+            className.typeArguments?.forEach {
+                if (it is TypeArgument.SpecificType) it.type.visitContainedClasses(visitor)
+            }
+        }
+    }
+    is ArrayGenericType -> componentType.visitContainedClasses(visitor)
+}
 
 private fun ClassGenericType.remap(mapper: (className: QualifiedName) -> QualifiedName?): ClassGenericType {
     val asQualifiedName = QualifiedName(packageName, ShortClassName(classNameChain.map { it.name }))
@@ -31,21 +52,55 @@ private fun ClassGenericType.remap(mapper: (className: QualifiedName) -> Qualifi
     return ClassGenericType(mappedPackage, mappedClasses)
 }
 
-private fun TypeArgument.remap(mapper: (className: QualifiedName) -> QualifiedName?): TypeArgument = when(this){
+private fun TypeArgument.remap(mapper: (className: QualifiedName) -> QualifiedName?): TypeArgument = when (this) {
     is TypeArgument.SpecificType -> copy(type = type.remap(mapper))
     TypeArgument.AnyType -> TypeArgument.AnyType
 }
 
-//@Suppress("UNCHECKED_CAST")
-//fun <T : GenericJavaType> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
-//    is JavaType.Generic -> with(declaration) {
-//        copy(declaration = copy(upperBounds = upperBounds.remap(mapper), annotations = annotations.remap(mapper)))
-//    }
-//    is Normal -> Normal(rawType.remap(mapper), typeArguments.remap(mapper), annotations.remap(mapper))
-//    is SuperType -> SuperType(rawType.remap(mapper), typeArguments.remap(mapper), annotations.remap(mapper))
-//    is GenericJavaType.Wildcard -> copy(bound = bound.remap(mapper), annotations = annotations.remap(mapper))
-//    else -> error("impossible")
-//} as T
-//typealias SuperType = SuperType
-//
-//fun <T : GenericJavaType> Iterable<T>.remap(mapper: (className: QualifiedName) -> QualifiedName?) = map { it.remap(mapper) }
+fun ClassGenericType.Companion.fromRawClassString(string: String, dotQualified: Boolean = false): ClassGenericType {
+    return string.toQualifiedName(dotQualified).toRawGenericType()
+}
+
+fun ClassGenericType.toJvmQualifiedName() = QualifiedName(
+    packageName,
+    ShortClassName(classNameChain.map { it.name })
+)
+
+fun QualifiedName.toRawGenericType(): ClassGenericType = ClassGenericType(packageName,
+    shortName.components.map { SimpleClassGenericType(it, null) }
+)
+
+fun <T : GenericReturnType> T.noAnnotations(): JavaType<T> = JavaType(this, listOf())
+
+fun GenericTypeOrPrimitive.toJvmType(): JvmType = when (this) {
+    is GenericsPrimitiveType -> primitive
+    is ClassGenericType -> ObjectType(toJvmQualifiedName())
+    is TypeVariable -> JavaLangObjectJvmType
+    is ArrayGenericType -> ArrayType(componentType.toJvmType())
+}
+
+fun GenericReturnType.toJvmType(): ReturnDescriptor = when (this) {
+    is GenericTypeOrPrimitive -> toJvmType()
+    GenericReturnType.Void -> ReturnDescriptor.Void
+}
+
+fun MethodSignature.toJvmDescriptor() = MethodDescriptor(
+    parameterDescriptors = parameterTypes.map { it.toJvmType() },
+    returnDescriptor = returnType.toJvmType()
+)
+
+fun JavaType<*>.toJvmType() = type.toJvmType()
+
+fun ObjectType.toRawGenericType(): ClassGenericType = fullClassName.toRawGenericType()
+fun ObjectType.toRawJavaType(): JavaClassType = JavaClassType(fullClassName.toRawGenericType(), annotations = listOf())
+fun FieldType.toRawGenericType(): GenericTypeOrPrimitive = when (this) {
+    is PrimitiveType -> GenericsPrimitiveType(this)
+    is ObjectType -> toRawGenericType()
+    is ArrayType -> ArrayGenericType(componentType.toRawGenericType())
+}
+
+
+fun ReturnDescriptor.toRawGenericType(): GenericReturnType = when (this) {
+    is FieldType -> toRawGenericType()
+    ReturnDescriptor.Void -> GenericReturnType.Void
+}

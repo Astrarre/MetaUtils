@@ -4,13 +4,14 @@ import PackageName
 import descriptor.PrimitiveType
 import includeIf
 
-//TODO rename everything to make sense
+
+interface Signature
 
 data class ClassSignature(
     val typeArguments: List<TypeArgumentDeclaration>?,
     val superClass: ClassGenericType,
     val superInterfaces: List<ClassGenericType>
-) {
+)  : Signature {
     companion object;
     override fun toString(): String = "<${typeArguments?.joinToString(", ")}> ".includeIf(typeArguments != null) +
             "(extends $superClass" + ", implements ".includeIf(superInterfaces.isNotEmpty()) +
@@ -20,9 +21,9 @@ data class ClassSignature(
 data class MethodSignature(
     val typeArguments: List<TypeArgumentDeclaration>?,
     val parameterTypes: List<GenericTypeOrPrimitive>,
-    val returnType: ReturnType,
+    val returnType: GenericReturnType,
     val throwsSignatures: List<ThrowableType>
-) {
+) : Signature {
     companion object;
     override fun toString(): String = "<${typeArguments?.joinToString(", ")}> ".includeIf(typeArguments != null) +
             "(${parameterTypes.joinToString(", ")}): $returnType" +
@@ -50,15 +51,15 @@ enum class WildcardType {
     }
 }
 
-sealed class ReturnType {
-    object Void : ReturnType() {
+sealed class GenericReturnType {
+    object Void : GenericReturnType() {
         override fun toString(): String = "void"
     }
 }
 
-sealed class GenericTypeOrPrimitive : ReturnType()
+sealed class GenericTypeOrPrimitive : GenericReturnType(), Signature
 
-data class PrimitiveTypeForGenerics(val primitive: PrimitiveType) : GenericTypeOrPrimitive() {
+data class GenericsPrimitiveType(val primitive: PrimitiveType) : GenericTypeOrPrimitive() {
     override fun toString(): String = primitive.toString()
 }
 
@@ -106,8 +107,8 @@ data class SimpleClassGenericType(val name: String, val typeArguments: List<Type
 }
 
 
-data class ArrayGenericType(val type: GenericTypeOrPrimitive) : GenericType() {
-    override fun toString(): String = "$type[]"
+data class ArrayGenericType(val componentType: GenericTypeOrPrimitive) : GenericType() {
+    override fun toString(): String = "$componentType[]"
 }
 
 /**

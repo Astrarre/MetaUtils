@@ -58,17 +58,17 @@ internal open class JavaCodeWriter : CodeWriter() {
 
 }
 
-private fun ObjectType.toTypeName(): ClassName {
-    val shortName = fullClassName.shortName
-    return ClassName.get(
-        fullClassName.packageName?.toDotQualified() ?: "", shortName.outerClass(),
-        *shortName.innerClasses().toTypedArray()
-    )
-}
-
-
-
-private fun JvmType.toTypeName(): TypeName = when (this) {
+//private fun ObjectType.toTypeName(): ClassName {
+//    val shortName = fullClassName.shortName
+//    return ClassName.get(
+//        fullClassName.packageName?.toDotQualified() ?: "", shortName.outerClass(),
+//        *shortName.innerClasses().toTypedArray()
+//    )
+//}
+//
+//
+//
+private fun PrimitiveType.toTypeName(): TypeName = when (this) {
     PrimitiveType.Byte -> TypeName.BYTE
     PrimitiveType.Char -> TypeName.CHAR
     PrimitiveType.Double -> TypeName.DOUBLE
@@ -77,27 +77,29 @@ private fun JvmType.toTypeName(): TypeName = when (this) {
     PrimitiveType.Long -> TypeName.LONG
     PrimitiveType.Short -> TypeName.SHORT
     PrimitiveType.Boolean -> TypeName.BOOLEAN
-    is ObjectType -> this.toTypeName()
-    is ArrayType -> ArrayTypeName.of(componentType.toTypeName())
 }
+//
+//internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
+//    is JvmType -> toTypeName()
+//    ReturnDescriptor.Void -> TypeName.VOID
+//}
 
-internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
-    is JvmType -> toTypeName()
-    ReturnDescriptor.Void -> TypeName.VOID
-}
-
-
+//private fun ReturnDescriptor.toTypeName(): TypeName = when(this){
+//    is PrimitiveType -> toTypeName()
+//    else -> toRawGenericType().toTypeName()
+//}
 
 fun JavaType<*>.toTypeName(): TypeName {
     //TODO: annotations
     return type.toTypeName()
 }
 
-private fun GenericTypeOrPrimitive.toTypeName() : TypeName = when (this) {
-    is PrimitiveTypeForGenerics -> primitive.toTypeName()
+fun GenericReturnType.toTypeName() : TypeName = when (this) {
+    is GenericsPrimitiveType -> primitive.toTypeName()
     is ClassGenericType -> toTypeName()
     is TypeVariable -> TypeVariableName.get(name)
-    is ArrayGenericType -> ArrayTypeName.of(type.toTypeName())
+    is ArrayGenericType -> ArrayTypeName.of(componentType.toTypeName())
+    GenericReturnType.Void -> TypeName.VOID
 }
 
 private fun ClassGenericType.toTypeName(): TypeName {
