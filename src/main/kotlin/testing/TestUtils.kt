@@ -1,12 +1,9 @@
 package testing
 
-import copyTo
-import deleteRecursively
-import walkJar
+import directChildren
+import exists
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
-import java.net.URL
-import java.net.URLClassLoader
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -16,9 +13,9 @@ fun getResource(path: String): Path = Paths.get(
     DummyClass::class.java
         .classLoader.getResource("dummyResource")!!.toURI()
 ).parent.resolve(path)
-
-
-
+    .also { check(it.exists()) {
+        "Resource '$path' does not exist. Other resources in resources directory: " + it.parent.directChildren()
+    } }
 
 
 //@DslMarker
