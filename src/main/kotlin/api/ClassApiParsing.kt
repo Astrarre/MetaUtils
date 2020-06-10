@@ -5,10 +5,17 @@ import api.ClassApi.Type.Annotation
 import api.ClassApi.Type.Enum
 import applyIf
 import asm.*
-import descriptor.*
+import descriptor.FieldDescriptor
+import descriptor.JavaLangObjectString
+import descriptor.MethodDescriptor
+import descriptor.read
 import hasExtension
 import isClassfile
 import openJar
+import signature.ClassGenericType
+import signature.ClassSignature
+import signature.fromRawClassString
+import signature.readFrom
 import toQualifiedName
 import walk
 import java.nio.file.FileSystem
@@ -72,30 +79,37 @@ private fun ClassApi.Companion.readSingularClass(
         )
     }
     val fields = classNode.fields.map { field ->
-        ClassApi.Field(field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility, field.isFinal
+        ClassApi.Field(
+            field.name, FieldDescriptor.read(field.desc), field.isStatic, field.visibility, field.isFinal
 //            signature = field.signature?.let { SignatureParser.make().parseTypeSig(it) }
         )
     }
 
     val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
 
-    val innerClassShortName = with(fullClassName.shortName.components) { if(size == 1) null else last() }
+    val innerClassShortName = with(fullClassName.shortName.components) { if (size == 1) null else last() }
+
+    val signature = if (classNode.signature != null) ClassSignature.readFrom(classNode.signature)
+    else ClassSignature(
+        superClass = ClassGenericType.fromRawClassString(classNode.superName),
+        superInterfaces = classNode.interfaces.map {
+            ClassGenericType.fromRawClassString(it)
+        },
+        typeArguments = listOf()
+    )
 
     // Unfortunate hack to get the outer class reference into the inner classes
     var classApi: ClassApi? = null
     classApi = ClassApi(
         name = fullClassName,
-//        packageName = packageName?.toDotQualified(),
-//        className = fullClassName.toDotQualified().substringAfterLast('$'),
-        //TODO: more precise translation with annotations and generics
+        //TODO: annotations
         superClass = if (classNode.superName == JavaLangObjectString) null else {
-            SuperType(ObjectType(classNode.superName, dotQualified = false), listOf(), listOf())
+            SuperType(signature.superClass, annotations = listOf())
         },
-        superInterfaces = classNode.interfaces.map { SuperType(ObjectType(it, dotQualified = false),
-            listOf(), listOf()) },
+        superInterfaces = signature.superInterfaces.map { SuperType(it,annotations =  listOf()) },
         methods = methods.toSet(), fields = fields.toSet(),
         innerClasses = classNode.innerClasses
-            .filter { innerClassShortName != it.innerName && it.outerName == classNode.name}
+            .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
             .map {
                 readSingularClass(fs, fs.getPath(it.name + ".class"), lazy { classApi!! }, isStatic = it.isStatic)
             },
@@ -110,7 +124,6 @@ private fun ClassApi.Companion.readSingularClass(
             }
         },
         visibility = classNode.visibility,
-//        signature = classNode.signature?.let { SignatureParser.make().parseClassSig(it) },
         isStatic = isStatic,
         isFinal = classNode.isfinal
     )

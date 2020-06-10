@@ -62,7 +62,7 @@ sealed class PrimitiveType(classFileName: String) : FieldType(classFileName) {
 
 data class ObjectType(val fullClassName: QualifiedName) :
     FieldType("L${fullClassName.toSlashQualifiedString()};") {
-    override fun toString() = fullClassName.shortName.toFullString()
+    override fun toString() = fullClassName.shortName.toDollarQualifiedString()
 
     constructor(qualifiedName: String, dotQualified : Boolean) : this(qualifiedName.toQualifiedName(dotQualified))
 

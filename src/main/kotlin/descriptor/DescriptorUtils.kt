@@ -3,6 +3,7 @@ package descriptor
 import QualifiedName
 import toQualifiedName
 
+@Suppress("UNCHECKED_CAST")
 fun <T : Descriptor> T.remap(mapper : (className: QualifiedName) -> QualifiedName?): T = when (this) {
     is PrimitiveType, ReturnDescriptor.Void -> this
     is ObjectType -> this.copy(mapper(fullClassName) ?: fullClassName)

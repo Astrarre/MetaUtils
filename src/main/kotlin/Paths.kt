@@ -67,7 +67,7 @@ fun Path.copyTo(target: Path, overwrite: Boolean = true): Path? {
 fun String.toPath(): Path = Paths.get(this)
 
 
-fun String.addIf(boolean: Boolean) = if (boolean) this else ""
+fun String.includeIf(boolean: Boolean) = if (boolean) this else ""
 fun <T> T.applyIf(boolean: Boolean, apply: (T) -> T) = if (boolean) apply(this) else this
 
 fun <T : Any?> T.prependTo(list: List<T>): List<T> {

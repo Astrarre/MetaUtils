@@ -9,6 +9,7 @@ import com.squareup.javapoet.*
 import descriptor.JvmType
 import descriptor.ObjectType
 import descriptor.ReturnDescriptor
+import signature.ClassGenericType
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 

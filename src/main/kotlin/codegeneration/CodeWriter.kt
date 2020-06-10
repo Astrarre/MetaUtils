@@ -1,9 +1,9 @@
 package codegeneration
 
-import api.GenericJavaType
 import api.JavaType
 import com.squareup.javapoet.*
 import descriptor.*
+import signature.*
 
 internal sealed class CodeWriter {
     /**
@@ -59,16 +59,14 @@ internal open class JavaCodeWriter : CodeWriter() {
 }
 
 private fun ObjectType.toTypeName(): ClassName {
-//    val className = simpleName()
-//    val innerClassSplit = className.split("\$")
-//    val rootClass = innerClassSplit[0]
-//    val innerClasses = innerClassSplit.drop(1)
     val shortName = fullClassName.shortName
     return ClassName.get(
         fullClassName.packageName?.toDotQualified() ?: "", shortName.outerClass(),
         *shortName.innerClasses().toTypedArray()
     )
 }
+
+
 
 private fun JvmType.toTypeName(): TypeName = when (this) {
     PrimitiveType.Byte -> TypeName.BYTE
@@ -88,18 +86,41 @@ internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
     ReturnDescriptor.Void -> TypeName.VOID
 }
 
-internal fun GenericJavaType.toTypeName(): TypeName = when (this) {
-    //TODO: annotations with annotated()
-    is JavaType.Generic -> with(declaration) {
-        TypeVariableName.get(name, *upperBounds.map { it.toTypeName() }.toTypedArray())
+
+
+fun JavaType<*>.toTypeName(): TypeName {
+    //TODO: annotations
+    return type.toTypeName()
+}
+
+private fun GenericTypeOrPrimitive.toTypeName() : TypeName = when (this) {
+    is PrimitiveTypeForGenerics -> primitive.toTypeName()
+    is ClassGenericType -> toTypeName()
+    is TypeVariable -> TypeVariableName.get(name)
+    is ArrayGenericType -> ArrayTypeName.of(type.toTypeName())
+}
+
+private fun ClassGenericType.toTypeName(): TypeName {
+    val outerClass = classNameChain[0]
+    val outerClassArgs = outerClass.typeArguments
+    val innerClasses = classNameChain.drop(1)
+    require(innerClasses.all { it.typeArguments == null }) {
+        "Inner class type arguments cannot be translated to a JavaPoet representation"
     }
-    is JavaType.Class<*> -> if (typeArguments.isEmpty()) rawType.toTypeName() else {
-        ParameterizedTypeName.get(rawType.toTypeName(), *typeArguments.map { it.toTypeName() }.toTypedArray())
+    val rawType = ClassName.get(
+        packageName?.toDotQualified() ?: "",
+        classNameChain[0].name,
+        *innerClasses.map { it.name }.toTypedArray()
+    )
+
+    return if (outerClassArgs == null) rawType else {
+        ParameterizedTypeName.get(rawType, *outerClassArgs.map { it.toTypeName() }.toTypedArray())
     }
-    is GenericJavaType.Wildcard -> {
-        val boundType = bound.toTypeName()
-        if (boundsAreUpper) WildcardTypeName.subtypeOf(boundType) else WildcardTypeName.supertypeOf(boundType)
-    }
+}
+
+private fun TypeArgument.toTypeName() : TypeName = when(this) {
+    is TypeArgument.SpecificType -> type.toTypeName()
+    TypeArgument.AnyType -> WildcardTypeName.subtypeOf(TypeName.OBJECT)
 }
 
 //TODO: replace with normal string?
@@ -108,23 +129,14 @@ internal data class FormattedString(val string: String, val formatArguments: Lis
     fun appendArg(arg: TypeName) = copy(formatArguments = formatArguments + arg)
     fun prependArg(arg: TypeName) = copy(formatArguments = listOf(arg) + formatArguments)
 
-    //    operator fun plus(appended: String) = FormattedString(this.string + appended, formatArguments)
     operator fun plus(other: FormattedString) =
         FormattedString(this.string + other.string, formatArguments + other.formatArguments)
 }
 
-//internal operator fun String.plus(formatted: FormattedString) =
-//    FormattedString(this + formatted.string, formatted.formatArguments)
 
 private val String.format get() = FormattedString(this, listOf())
 private fun String.format(args: List<TypeName>) = FormattedString(this, args)
 private fun String.format(arg: TypeName) = FormattedString(this, listOf(arg))
-
-//private fun SelfConstructorType.toJavaCode() = when (this) {
-//    SelfConstructorType.This -> "this"
-//    SelfConstructorType.Super -> "super"
-//}
-
 
 private const val TYPE_FORMAT = "\$T"
 

@@ -2,11 +2,12 @@ package api
 
 import QualifiedName
 import ShortClassName
-import addIf
+import includeIf
 import codegeneration.ClassVisibility
 import codegeneration.Public
 import codegeneration.Visibility
 import descriptor.*
+import signature.ClassGenericType
 
 interface Visible {
     val visibility: Visibility
@@ -18,8 +19,6 @@ interface Visible {
  */
 class ClassApi(
     val name: QualifiedName,
-//    val packageName: String?,
-//    val className: String,
     val classType: Type,
     val superClass: SuperType?,
     val superInterfaces: List<SuperType>,
@@ -55,7 +54,7 @@ class ClassApi(
         override val visibility: Visibility,
         override val isStatic: Boolean
     ) : Member() {
-        override fun toString() = "static ".addIf(isStatic) + "$name$descriptor"
+        override fun toString() = "static ".includeIf(isStatic) + "$name$descriptor"
 
     }
 
@@ -66,7 +65,7 @@ class ClassApi(
         override val visibility: Visibility,
         val isFinal: Boolean
     ) : Member() {
-        override fun toString() = "static ".addIf(isStatic) + "$name: $descriptor"
+        override fun toString() = "static ".includeIf(isStatic) + "$name: $descriptor"
     }
 
     override fun toString(): String {

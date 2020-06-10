@@ -21,7 +21,7 @@ private fun String.toApiClassName() = "I$this"
 private fun String.remapToApiClass(): String {
     val (packageName, className) = toQualifiedName(dotQualified = false)
     checkNotNull(packageName)
-    return "${packageName.toSlashQualified().toApiPackageName()}/${className.toFullString().toApiClassName()}"
+    return "${packageName.toSlashQualified().toApiPackageName()}/${className.toDollarQualifiedString().toApiClassName()}"
 }
 
 //class X : ArrayList<String>()

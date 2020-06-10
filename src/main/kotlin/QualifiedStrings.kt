@@ -3,15 +3,17 @@ data class QualifiedName(
     val packageName: PackageName?, val shortName: ShortClassName) {
 //    fun toQualifiedString() = (packageName ?: QualifiedString.Empty) + shortName.toDollarQualified()
 
-    private fun toQualified(separator: String): String = if (packageName == null) shortName.toFullString() else
-        packageName.toQualified(separator) + separator + shortName.toFullString()
+    private fun toQualified(packageSeparator: String, classSeparator : String): String = if (packageName == null) shortName.toDollarQualifiedString() else
+        packageName.toQualified(packageSeparator) + packageSeparator + shortName.toQualified(classSeparator)
+
+    private fun Boolean.toClassSeparator() = if(this) "$" else "."
 
     // JavaPoet, reflection
-    fun toDotQualifiedString() = toQualified(".")
+    fun toDotQualifiedString(dollarQualified: Boolean = true) = toQualified(".", dollarQualified.toClassSeparator())
     // ASM, JVM
-    fun toSlashQualifiedString() = toQualified("/")
+    fun toSlashQualifiedString(dollarQualified: Boolean = true) = toQualified("/", dollarQualified.toClassSeparator())
 
-    override fun toString(): String  = toDotQualifiedString()
+    override fun toString(): String  = toDotQualifiedString(dollarQualified = true)
     // Inner classes
 //    fun toDollarQualifiedString() = toQualified("$")
 
@@ -29,13 +31,13 @@ fun String.toPackageName(dotQualified: Boolean): PackageName {
     return PackageName(split(separator))
 }
 
-fun String.toShortClassName(): ShortClassName = ShortClassName(split("$"))
+fun String.toShortClassName(dollarQualified : Boolean = true): ShortClassName = ShortClassName(split(if(dollarQualified) "$" else "."))
 
-fun String.toQualifiedName(dotQualified: Boolean): QualifiedName {
+fun String.toQualifiedName(dotQualified: Boolean, dollarQualified: Boolean = true): QualifiedName {
     val separator = if (dotQualified) '.' else '/'
     val components = split(separator)
-    return if (components.size == 1) QualifiedName(packageName = null, shortName = components.last().toShortClassName())
-    else QualifiedName(packageName = PackageName(components.dropLast(1)), shortName = components.last().toShortClassName())
+    return if (components.size == 1) QualifiedName(packageName = null, shortName = components.last().toShortClassName(dollarQualified))
+    else QualifiedName(packageName = PackageName(components.dropLast(1)), shortName = components.last().toShortClassName(dollarQualified))
 }
 
  fun String.prependToQualified(qualifiedString: PackageName) = PackageName(this.prependTo(qualifiedString.components))
@@ -66,6 +68,7 @@ data class PackageName(override val components: List<String>) : AbstractQualifie
     operator fun plus(other : PackageName) = PackageName(this.components + other.components)
     fun toDotQualified() = toQualified(".")
     fun toSlashQualified() = toQualified("/")
+    override fun toString(): String = toSlashQualified()
 
 
 
@@ -80,7 +83,8 @@ data class ShortClassName(override val components: List<String>) : AbstractQuali
     init {
         require(components.isNotEmpty())
     }
-    fun toFullString() = toQualified("$")
+    fun toDollarQualifiedString() = toQualified("$")
+    fun toDotQualifiedString() = toQualified(".")
     fun outerClass() = components[0]
     fun innerClasses() = components.drop(1)
     fun innermostClass() = components.last()

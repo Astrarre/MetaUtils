@@ -13,7 +13,7 @@ fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
     return ObjectType(descriptor.substring(1, descriptor.length - 1), dotQualified = false)
 }
 
-private val baseTypesMap = mapOf(
+internal val baseTypesMap = mapOf(
     PrimitiveType.Byte.classFileName to PrimitiveType.Byte,
     PrimitiveType.Char.classFileName to PrimitiveType.Char,
     PrimitiveType.Double.classFileName to PrimitiveType.Double,
@@ -24,7 +24,7 @@ private val baseTypesMap = mapOf(
     PrimitiveType.Boolean.classFileName to PrimitiveType.Boolean
 )
 
-private val baseTypesCharMap = baseTypesMap.mapKeys { it.key[0] }
+internal val baseTypesCharMap = baseTypesMap.mapKeys { it.key[0] }
 
 fun MethodDescriptor.Companion.read(descriptor: String): MethodDescriptor {
     require(descriptor[0] == '(') { "A method descriptor must begin with a '('" }
