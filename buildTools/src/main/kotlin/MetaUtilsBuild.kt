@@ -90,6 +90,7 @@ open class BuildMetaUtilsExtension(private val project: Project) {
                     classNode.writeTo(output)
                 }
 
+                destinationJar.toPath().parent.createDirectories()
                 outputDir.convertDirToJar(destination = destinationJar.toPath())
             }
         }
