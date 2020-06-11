@@ -30,6 +30,7 @@ sealed class Expression : Statement(), Receiver {
         class Constructor(val receiver: Expression?, val constructing: JavaClassType, parameters: List<Expression>) :
             Call(parameters)
     }
+    class ArrayConstructor(val componentClass : JavaClassType, val size: Expression) : Expression()
 
     object This : Expression()
 }

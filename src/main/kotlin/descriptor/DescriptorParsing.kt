@@ -14,14 +14,14 @@ fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
 }
 
 internal val baseTypesMap = mapOf(
-    PrimitiveType.Byte.classFileName to PrimitiveType.Byte,
-    PrimitiveType.Char.classFileName to PrimitiveType.Char,
-    PrimitiveType.Double.classFileName to PrimitiveType.Double,
-    PrimitiveType.Float.classFileName to PrimitiveType.Float,
-    PrimitiveType.Int.classFileName to PrimitiveType.Int,
-    PrimitiveType.Long.classFileName to PrimitiveType.Long,
-    PrimitiveType.Short.classFileName to PrimitiveType.Short,
-    PrimitiveType.Boolean.classFileName to PrimitiveType.Boolean
+    JvmPrimitiveType.Byte.classFileName to JvmPrimitiveType.Byte,
+    JvmPrimitiveType.Char.classFileName to JvmPrimitiveType.Char,
+    JvmPrimitiveType.Double.classFileName to JvmPrimitiveType.Double,
+    JvmPrimitiveType.Float.classFileName to JvmPrimitiveType.Float,
+    JvmPrimitiveType.Int.classFileName to JvmPrimitiveType.Int,
+    JvmPrimitiveType.Long.classFileName to JvmPrimitiveType.Long,
+    JvmPrimitiveType.Short.classFileName to JvmPrimitiveType.Short,
+    JvmPrimitiveType.Boolean.classFileName to JvmPrimitiveType.Boolean
 )
 
 internal val baseTypesCharMap = baseTypesMap.mapKeys { it.key[0] }

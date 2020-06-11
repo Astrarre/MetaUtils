@@ -90,10 +90,10 @@ private class SignatureReader(private val signature: String) {
     }
 
     private fun readSimpleClassTypeSignature(): SimpleClassGenericType {
-        val identifier = readUntil(until = { it == '<' || it == '.' || it == ';' }, skip = false)
+        val identifier = readUntil(until = { it == '<' || it == '$' || it == ';' }, skip = false)
         val typeArguments = if (current() == '<') readTypeArguments()
         else {
-            if (current() == '.') advance()
+            if (current() == '$') advance()
             null
         }
         return SimpleClassGenericType(identifier, typeArguments)
@@ -139,9 +139,7 @@ private class SignatureReader(private val signature: String) {
         return readFieldTypeSignature()
     }
 
-    private fun readPrimitiveSignature(): GenericsPrimitiveType? = baseTypesCharMap[current()]?.let {
-        GenericsPrimitiveType(it).also { advance() }
-    }
+    private fun readPrimitiveSignature(): GenericsPrimitiveType? = baseTypesGenericsMap[current()]?.also { advance() }
 
     private fun readTypeVariableSignature(): TypeVariable {
         advance('T')
@@ -175,8 +173,8 @@ private class SignatureReader(private val signature: String) {
         } while (
         // Got to start of some generic parameter, means package specifier is over, e.g. foo/bar/List<String>
             current != '<' &&
-            // Got to some inner class, e.g. foo/bar/Baz.Inner
-            current != '.' &&
+            // Got to some inner class, e.g. foo/bar/Baz$Inner
+            current != '$' &&
             // Got to the end of a class, e.g. foo/bar/Baz;
             current != ';'
         )

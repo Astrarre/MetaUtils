@@ -7,6 +7,7 @@ import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
+import signature.*
 import java.io.File
 
 
@@ -61,9 +62,27 @@ open class BuildMetaUtilsExtension(private val project: Project) {
                     val classNode = readToClassNode(input)
                     if (classNode.name.startsWith("net/minecraft/")) {
                         val newName = classNode.name.remapToApiClass()
+                        println("Attaching interface $newName to ${classNode.name}")
                         classNode.interfaces.add(newName)
 
-                        println("Attaching interface $newName to ${classNode.name}")
+                        if (classNode.signature != null) {
+                            val signature = ClassSignature.readFrom(classNode.signature)
+                            val newSignature = signature.copy(superInterfaces = signature.superInterfaces +
+                                    ClassGenericType.fromRawClassString(newName)
+                            )
+                            classNode.signature = newSignature.toClassfileName()
+                        }
+
+//                           val newsig____test = ClassSignature(typeArguments = null,
+//                            superClass = ClassGenericType.fromRawClassString("java/lang/Object"),
+//                               superInterfaces = listOf(ClassGenericType.fromRawClassString("java/lang/Thread")))
+//
+//                        classNode.interfaces.add("java/lang/Thread")
+//
+////                        val newsig____test = ClassSignature(typeArguments = null,
+////                            superClass = ClassGenericType.fromRawClassString("java/lang/Thread"), superInterfaces = listOf())
+//
+//                        classNode.signature = newsig____test.toClassfileName()
                     }
 
                     output.parent.createDirectories()

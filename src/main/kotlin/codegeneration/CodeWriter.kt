@@ -2,7 +2,8 @@ package codegeneration
 
 import api.JavaType
 import com.squareup.javapoet.*
-import descriptor.*
+import descriptor.JvmPrimitiveType
+import prependIfNotNull
 import signature.*
 
 internal sealed class CodeWriter {
@@ -37,6 +38,8 @@ internal open class JavaCodeWriter : CodeWriter() {
         is ClassReceiver -> TYPE_FORMAT.format(code.type.toTypeName())
         SuperReceiver -> "super".format
         is Statement.Assignment -> write(code.target).mapString { "$it = " } + write(code.assignedValue)
+        is Expression.ArrayConstructor -> write(code.size).mapString { "new $TYPE_FORMAT[$it]" }
+            .prependArg(code.componentClass.toTypeName())
     }
 
     // Add parentheses to casts and constructor calls
@@ -58,43 +61,29 @@ internal open class JavaCodeWriter : CodeWriter() {
 
 }
 
-//private fun ObjectType.toTypeName(): ClassName {
-//    val shortName = fullClassName.shortName
-//    return ClassName.get(
-//        fullClassName.packageName?.toDotQualified() ?: "", shortName.outerClass(),
-//        *shortName.innerClasses().toTypedArray()
-//    )
-//}
-//
-//
-//
-private fun PrimitiveType.toTypeName(): TypeName = when (this) {
-    PrimitiveType.Byte -> TypeName.BYTE
-    PrimitiveType.Char -> TypeName.CHAR
-    PrimitiveType.Double -> TypeName.DOUBLE
-    PrimitiveType.Float -> TypeName.FLOAT
-    PrimitiveType.Int -> TypeName.INT
-    PrimitiveType.Long -> TypeName.LONG
-    PrimitiveType.Short -> TypeName.SHORT
-    PrimitiveType.Boolean -> TypeName.BOOLEAN
-}
-//
-//internal fun ReturnDescriptor.toTypeName(): TypeName = when (this) {
-//    is JvmType -> toTypeName()
-//    ReturnDescriptor.Void -> TypeName.VOID
-//}
 
-//private fun ReturnDescriptor.toTypeName(): TypeName = when(this){
-//    is PrimitiveType -> toTypeName()
-//    else -> toRawGenericType().toTypeName()
-//}
+private fun JvmPrimitiveType.toTypeName(): TypeName = when (this) {
+    JvmPrimitiveType.Byte -> TypeName.BYTE
+    JvmPrimitiveType.Char -> TypeName.CHAR
+    JvmPrimitiveType.Double -> TypeName.DOUBLE
+    JvmPrimitiveType.Float -> TypeName.FLOAT
+    JvmPrimitiveType.Int -> TypeName.INT
+    JvmPrimitiveType.Long -> TypeName.LONG
+    JvmPrimitiveType.Short -> TypeName.SHORT
+    JvmPrimitiveType.Boolean -> TypeName.BOOLEAN
+}
+
+fun TypeArgumentDeclaration.toTypeName(): TypeVariableName = TypeVariableName.get(
+    name,
+    *interfaceBounds.prependIfNotNull(classBound).map { it.toTypeName() }.toTypedArray()
+)
 
 fun JavaType<*>.toTypeName(): TypeName {
     //TODO: annotations
     return type.toTypeName()
 }
 
-fun GenericReturnType.toTypeName() : TypeName = when (this) {
+fun GenericReturnType.toTypeName(): TypeName = when (this) {
     is GenericsPrimitiveType -> primitive.toTypeName()
     is ClassGenericType -> toTypeName()
     is TypeVariable -> TypeVariableName.get(name)
@@ -103,24 +92,43 @@ fun GenericReturnType.toTypeName() : TypeName = when (this) {
 }
 
 private fun ClassGenericType.toTypeName(): TypeName {
-    val outerClass = classNameChain[0]
+    val outerClass = classNameSegments[0]
     val outerClassArgs = outerClass.typeArguments
-    val innerClasses = classNameChain.drop(1)
-    require(innerClasses.all { it.typeArguments == null }) {
-        "Inner class type arguments cannot be translated to a JavaPoet representation"
-    }
-    val rawType = ClassName.get(
+    val innerClasses = classNameSegments.drop(1)
+//    require() {
+//        "Inner class type arguments cannot be translated to a JavaPoet representation"
+//    }
+
+    val isGenericType = classNameSegments.any { it.typeArguments != null }
+
+    val outerRawType = ClassName.get(
         packageName?.toDotQualified() ?: "",
-        classNameChain[0].name,
-        *innerClasses.map { it.name }.toTypedArray()
+        classNameSegments[0].name,
+        *(if (isGenericType) arrayOf() else innerClasses.map { it.name }.toTypedArray())
     )
 
-    return if (outerClassArgs == null) rawType else {
-        ParameterizedTypeName.get(rawType, *outerClassArgs.map { it.toTypeName() }.toTypedArray())
+    return if (!isGenericType) outerRawType else {
+        if (outerClassArgs == null) {
+            when(innerClasses.size){
+                0 -> outerRawType
+                1 -> ParameterizedTypeName.get(outerRawType.nestedClass(innerClasses[0].name),
+                    *innerClasses[0].typeArguments.toTypeName().toTypedArray())
+                // This would require pretty complicated handling in the general case, thanks jake wharton
+                else -> error("2-deep inner classes with a type argument only in a nested class are not expected")
+            }
+
+        }
+        else {
+            innerClasses.fold(ParameterizedTypeName.get(outerRawType, *outerClassArgs.toTypeName().toTypedArray())) { acc, classSegment ->
+                acc.nestedClass(classSegment.name, classSegment.typeArguments.toTypeName())
+            }
+        }
     }
 }
 
-private fun TypeArgument.toTypeName() : TypeName = when(this) {
+private fun List<TypeArgument>?.toTypeName() = this?.map { it.toTypeName() } ?: listOf()
+
+private fun TypeArgument.toTypeName(): TypeName = when (this) {
     is TypeArgument.SpecificType -> type.toTypeName()
     TypeArgument.AnyType -> WildcardTypeName.subtypeOf(TypeName.OBJECT)
 }

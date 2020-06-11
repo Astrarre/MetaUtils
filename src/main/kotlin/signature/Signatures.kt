@@ -1,7 +1,7 @@
 package signature
 
 import PackageName
-import descriptor.PrimitiveType
+import descriptor.JvmPrimitiveType
 import includeIf
 
 
@@ -11,7 +11,7 @@ data class ClassSignature(
     val typeArguments: List<TypeArgumentDeclaration>?,
     val superClass: ClassGenericType,
     val superInterfaces: List<ClassGenericType>
-)  : Signature {
+) : Signature {
     companion object;
     override fun toString(): String = "<${typeArguments?.joinToString(", ")}> ".includeIf(typeArguments != null) +
             "(extends $superClass" + ", implements ".includeIf(superInterfaces.isNotEmpty()) +
@@ -59,8 +59,30 @@ sealed class GenericReturnType {
 
 sealed class GenericTypeOrPrimitive : GenericReturnType(), Signature
 
-data class GenericsPrimitiveType(val primitive: PrimitiveType) : GenericTypeOrPrimitive() {
+internal val baseTypesGenericsMap = mapOf(
+    JvmPrimitiveType.Byte.classFileName to GenericsPrimitiveType.Byte,
+    JvmPrimitiveType.Char.classFileName to GenericsPrimitiveType.Char,
+    JvmPrimitiveType.Double.classFileName to GenericsPrimitiveType.Double,
+    JvmPrimitiveType.Float.classFileName to GenericsPrimitiveType.Float,
+    JvmPrimitiveType.Int.classFileName to GenericsPrimitiveType.Int,
+    JvmPrimitiveType.Long.classFileName to GenericsPrimitiveType.Long,
+    JvmPrimitiveType.Short.classFileName to GenericsPrimitiveType.Short,
+    JvmPrimitiveType.Boolean.classFileName to GenericsPrimitiveType.Boolean
+).mapKeys { it.key[0] }
+
+class GenericsPrimitiveType private constructor(val primitive: JvmPrimitiveType) : GenericTypeOrPrimitive() {
     override fun toString(): String = primitive.toString()
+
+    companion object {
+        val Byte = GenericsPrimitiveType(JvmPrimitiveType.Byte)
+        val Char = GenericsPrimitiveType(JvmPrimitiveType.Char)
+        val Double = GenericsPrimitiveType(JvmPrimitiveType.Double)
+        val Float = GenericsPrimitiveType(JvmPrimitiveType.Float)
+        val Int = GenericsPrimitiveType(JvmPrimitiveType.Int)
+        val Long = GenericsPrimitiveType(JvmPrimitiveType.Long)
+        val Short = GenericsPrimitiveType(JvmPrimitiveType.Short)
+        val Boolean = GenericsPrimitiveType(JvmPrimitiveType.Boolean)
+    }
 }
 
 sealed class GenericType : GenericTypeOrPrimitive() {
@@ -85,15 +107,15 @@ data class ClassGenericType(
     /**
      * Outer class and then inner classes
      */
-    val classNameChain: List<SimpleClassGenericType>
+    val classNameSegments: List<SimpleClassGenericType>
 ) : ThrowableType() {
     init {
-        check(classNameChain.isNotEmpty())
+        check(classNameSegments.isNotEmpty())
     }
 
     companion object;
     override fun toString(): String = "${packageName?.toSlashQualified()}/".includeIf(packageName != null) +
-            classNameChain.joinToString("$")
+            classNameSegments.joinToString("$")
 }
 
 

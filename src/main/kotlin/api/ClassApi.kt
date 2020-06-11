@@ -8,10 +8,7 @@ import codegeneration.Visibility
 import descriptor.MethodDescriptor
 import descriptor.ObjectType
 import includeIf
-import signature.GenericReturnType
-import signature.TypeArgumentDeclaration
-import signature.toJvmType
-import signature.toRawJavaType
+import signature.*
 
 interface Visible {
     val visibility: Visibility
@@ -57,7 +54,7 @@ class ClassApi(
         override val name: String,
         val returnType: JavaReturnType,
         val parameters: Map<String, AnyJavaType>,
-        val typeParameters : List<TypeArgumentDeclaration>,
+        val typeArguments: List<TypeArgumentDeclaration>,
         override val visibility: Visibility,
         override val isStatic: Boolean
     ) : Member() {
@@ -94,21 +91,31 @@ fun ClassApi.Method.getJvmDescriptor() = MethodDescriptor(
     parameterDescriptors = parameters.map { (_, type) -> type.type.toJvmType() },
     returnDescriptor = returnType.toJvmType()
 )
-//fun ClassApi.Method.getParameters(): Map<String, ParameterSi> =
-//    parameterNames.zip(signature.parameterDescriptors).toMap()
-//        // Remove outer class references as parameters (they are passed as this$0)
-//        .filter { '$' !in it.key }
 
-//val ClassApi.Method.returnType get() = signature.returnDescriptor
+/**
+ * Goes from top to bottom
+ */
+@OptIn(ExperimentalStdlibApi::class)
+fun ClassApi.listInnerClassChain(): List<ClassApi> = buildList<ClassApi> { addToInnerClassChain(this) }.reversed()
+private fun ClassApi.addToInnerClassChain(accumulated: MutableList<ClassApi>) {
+    accumulated.add(this)
+    outerClass?.value?.addToInnerClassChain(accumulated)
+}
+
 val ClassApi.Method.isVoid get() = returnType.type == GenericReturnType.Void
-fun ClassApi.nameAsType() = ObjectType(name).toRawJavaType()
+fun ClassApi.asType() = name.toClassGenericType(
+    listInnerClassChain().map { it.typeArguments.toTypeArgumentsOfNames() }
+).noAnnotations()
+
+fun ClassApi.asRawType() = ObjectType(name).toRawJavaType()
+
+private fun List<TypeArgumentDeclaration>.toTypeArgumentsOfNames(): List<TypeArgument>? = if(isEmpty()) null else map {
+    TypeArgument.SpecificType(TypeVariable(it.name), wildcardType = null)
+}
+
 fun ClassApi.innerMostClassNameAsType() = ObjectType(
     QualifiedName(
         packageName = null,
         shortName = ShortClassName(listOf(name.shortName.innermostClass()))
     )
 ).toRawJavaType()
-//fun ClassApi.innerClassNameAsType() = ObjectType.dotQualified(this.className)
-// fun ClassApi.fullInnerName() : String {
-//    return if (outerClass == null) fullyQualifiedName else outerClass.value.fullInnerName() + "\$" + className
-//}

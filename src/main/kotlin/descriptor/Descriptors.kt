@@ -25,36 +25,36 @@ sealed class FieldType(classFileName: String) : ReturnDescriptor(classFileName) 
 
 }
 
-sealed class PrimitiveType(classFileName: String) : FieldType(classFileName) {
-    object Byte : PrimitiveType("B") {
+sealed class JvmPrimitiveType(classFileName: String) : FieldType(classFileName) {
+    object Byte : JvmPrimitiveType("B") {
         override fun toString() = "byte"
     }
 
-    object Char : PrimitiveType("C") {
+    object Char : JvmPrimitiveType("C") {
         override fun toString() = "char"
     }
 
-    object Double : PrimitiveType("D") {
+    object Double : JvmPrimitiveType("D") {
         override fun toString() = "double"
     }
 
-    object Float : PrimitiveType("F") {
+    object Float : JvmPrimitiveType("F") {
         override fun toString() = "float"
     }
 
-    object Int : PrimitiveType("I") {
+    object Int : JvmPrimitiveType("I") {
         override fun toString() = "int"
     }
 
-    object Long : PrimitiveType("J") {
+    object Long : JvmPrimitiveType("J") {
         override fun toString() = "long"
     }
 
-    object Short : PrimitiveType("S") {
+    object Short : JvmPrimitiveType("S") {
         override fun toString() = "short"
     }
 
-    object Boolean : PrimitiveType("Z") {
+    object Boolean : JvmPrimitiveType("Z") {
         override fun toString() = "boolean"
     }
 }

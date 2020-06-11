@@ -2,13 +2,12 @@ package descriptor
 
 import QualifiedName
 import api.AnyJavaType
-import api.JavaClassType
 import signature.*
 import toQualifiedName
 
 @Suppress("UNCHECKED_CAST")
 fun <T : Descriptor> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
-    is PrimitiveType, ReturnDescriptor.Void -> this
+    is JvmPrimitiveType, ReturnDescriptor.Void -> this
     is ObjectType -> this.copy(mapper(fullClassName) ?: fullClassName)
     is ArrayType -> this.copy(componentType.remap(mapper))
     is MethodDescriptor -> this.copy(parameterDescriptors.remap(mapper), returnDescriptor.remap(mapper))

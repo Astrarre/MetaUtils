@@ -14,9 +14,11 @@ fun getResource(path: String): Path = Paths.get(
         .classLoader.getResource("dummyResource")!!.toURI()
 ).parent.resolve(path)
     .also { check(it.exists()) {
-        "Resource '$path' does not exist. Other resources in resources directory: " + it.parent.directChildren()
+            "Resource '$path' does not exist. Other resources in resources directory: " + it.parent.directChildren().toList()
     } }
 
+
+typealias Something = ArrayList<*>
 
 //@DslMarker
 //annotation class JarDsl

@@ -118,7 +118,7 @@ private fun readMethod(
 
     return ClassApi.Method(
         name = method.name,
-        typeParameters = signature.typeArguments ?: listOf(),
+        typeArguments = signature.typeArguments ?: listOf(),
         returnType = JavaReturnType(signature.returnType, annotations = listOf()),
         parameters = parameterNames.zip(signature.parameterTypes)
             .map { (name, type) -> name to AnyJavaType(type, annotations = listOf()) }.toMap(),
