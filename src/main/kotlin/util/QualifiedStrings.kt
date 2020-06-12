@@ -1,6 +1,9 @@
+package util
+
 data class QualifiedName(
     // Dot or slash qualified
-    val packageName: PackageName?, val shortName: ShortClassName) {
+    val packageName: PackageName?, val shortName: ShortClassName
+) {
 //    fun toQualifiedString() = (packageName ?: QualifiedString.Empty) + shortName.toDollarQualified()
 
     private fun toQualified(packageSeparator: String, classSeparator : String): String = if (packageName == null) shortName.toDollarQualifiedString() else
@@ -31,18 +34,26 @@ fun String.toPackageName(dotQualified: Boolean): PackageName {
     return PackageName(split(separator))
 }
 
-fun String.toShortClassName(dollarQualified : Boolean = true): ShortClassName = ShortClassName(split(if(dollarQualified) "$" else "."))
+fun String.toShortClassName(dollarQualified : Boolean = true): ShortClassName =
+    ShortClassName(split(if (dollarQualified) "$" else "."))
 
 fun String.toQualifiedName(dotQualified: Boolean, dollarQualified: Boolean = true): QualifiedName {
     val separator = if (dotQualified) '.' else '/'
     val components = split(separator)
-    return if (components.size == 1) QualifiedName(packageName = null, shortName = components.last().toShortClassName(dollarQualified))
-    else QualifiedName(packageName = PackageName(components.dropLast(1)), shortName = components.last().toShortClassName(dollarQualified))
+    return if (components.size == 1) QualifiedName(
+        packageName = null,
+        shortName = components.last().toShortClassName(dollarQualified)
+    )
+    else QualifiedName(
+        packageName = PackageName(components.dropLast(1)),
+        shortName = components.last().toShortClassName(dollarQualified)
+    )
 }
 
- fun String.prependToQualified(qualifiedString: PackageName) = PackageName(this.prependTo(qualifiedString.components))
-// fun String?.prependIfNotNull(qualifiedString: QualifiedString) = if(this == null) qualifiedString else
-//     QualifiedString(this.prependTo(qualifiedString.components))
+ fun String.prependToQualified(qualifiedString: PackageName) =
+     PackageName(this.prependTo(qualifiedString.components))
+// fun String?.util.prependIfNotNull(qualifiedString: QualifiedString) = if(this == null) qualifiedString else
+//     QualifiedString(this.util.prependTo(qualifiedString.components))
 
 sealed class AbstractQualifiedString {
     abstract val components: List<String>
@@ -65,17 +76,18 @@ data class PackageName(override val components: List<String>) : AbstractQualifie
         val Empty = PackageName(listOf())
     }
 
-    operator fun plus(other : PackageName) = PackageName(this.components + other.components)
+    operator fun plus(other : PackageName) =
+        PackageName(this.components + other.components)
     fun toDotQualified() = toQualified(".")
     fun toSlashQualified() = toQualified("/")
     override fun toString(): String = toSlashQualified()
 
 
 
-//    fun splitPackageClass(): QualifiedName {
+//    fun splitPackageClass(): util.QualifiedName {
 //        require(components.isNotEmpty())
-//        return if (components.size == 1) QualifiedName(packageName = null, shortName = components[0])
-//        else QualifiedName(packageName = PackageName(components.dropLast(1)), shortName = components.last())
+//        return if (components.size == 1) util.QualifiedName(packageName = null, shortName = components[0])
+//        else util.QualifiedName(packageName = util.PackageName(components.dropLast(1)), shortName = components.last())
 //    }
 }
 

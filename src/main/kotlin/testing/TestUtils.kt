@@ -1,7 +1,7 @@
 package testing
 
-import directChildren
-import exists
+import util.directChildren
+import util.exists
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
 import java.nio.file.Path
@@ -14,7 +14,7 @@ fun getResource(path: String): Path = Paths.get(
         .classLoader.getResource("dummyResource")!!.toURI()
 ).parent.resolve(path)
     .also { check(it.exists()) {
-            "Resource '$path' does not exist. Other resources in resources directory: " + it.parent.directChildren().toList()
+            "Resource '$path' does not exist. Other resources in resources directory ${it.parent}: " + it.parent.directChildren().toList()
     } }
 
 
@@ -41,8 +41,8 @@ typealias Something = ArrayList<*>
 ////    fun instance()
 //}
 
-val Member.isPublic get() = Modifier.isPublic(this.modifiers)
-val Member.isPrivate get() = Modifier.isPrivate(this.modifiers)
+//val Member.isPublic get() = Modifier.isPublic(this.modifiers)
+//val Member.isPrivate get() = Modifier.isPrivate(this.modifiers)
 
 //interface ClassContext {
 //    val clazz: Class<*>

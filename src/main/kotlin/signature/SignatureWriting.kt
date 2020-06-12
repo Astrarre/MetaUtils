@@ -1,6 +1,6 @@
 package signature
 
-import includeIf
+import util.includeIf
 
 fun ClassSignature.toClassfileName() = typeArguments.toDeclClassfileName() +
         superClass.toClassfileName() + superInterfaces.joinToString("") { it.toClassfileName() }

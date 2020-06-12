@@ -3,7 +3,7 @@ package codegeneration
 import api.JavaType
 import com.squareup.javapoet.*
 import descriptor.JvmPrimitiveType
-import prependIfNotNull
+import util.prependIfNotNull
 import signature.*
 
 internal sealed class CodeWriter {
@@ -109,17 +109,23 @@ private fun ClassGenericType.toTypeName(): TypeName {
 
     return if (!isGenericType) outerRawType else {
         if (outerClassArgs == null) {
-            when(innerClasses.size){
+            when (innerClasses.size) {
                 0 -> outerRawType
-                1 -> ParameterizedTypeName.get(outerRawType.nestedClass(innerClasses[0].name),
-                    *innerClasses[0].typeArguments.toTypeName().toTypedArray())
+                1 -> ParameterizedTypeName.get(
+                    outerRawType.nestedClass(innerClasses[0].name),
+                    *innerClasses[0].typeArguments.toTypeName().toTypedArray()
+                )
                 // This would require pretty complicated handling in the general case, thanks jake wharton
                 else -> error("2-deep inner classes with a type argument only in a nested class are not expected")
             }
 
-        }
-        else {
-            innerClasses.fold(ParameterizedTypeName.get(outerRawType, *outerClassArgs.toTypeName().toTypedArray())) { acc, classSegment ->
+        } else {
+            innerClasses.fold(
+                ParameterizedTypeName.get(
+                    outerRawType,
+                    *outerClassArgs.toTypeName().toTypedArray()
+                )
+            ) { acc, classSegment ->
                 acc.nestedClass(classSegment.name, classSegment.typeArguments.toTypeName())
             }
         }
@@ -129,7 +135,14 @@ private fun ClassGenericType.toTypeName(): TypeName {
 private fun List<TypeArgument>?.toTypeName() = this?.map { it.toTypeName() } ?: listOf()
 
 private fun TypeArgument.toTypeName(): TypeName = when (this) {
-    is TypeArgument.SpecificType -> type.toTypeName()
+    is TypeArgument.SpecificType -> {
+        val bound = type.toTypeName()
+        when (wildcardType) {
+            WildcardType.Extends -> WildcardTypeName.subtypeOf(bound)
+            WildcardType.Super -> WildcardTypeName.supertypeOf(bound)
+            null -> bound
+        }
+    }
     TypeArgument.AnyType -> WildcardTypeName.subtypeOf(TypeName.OBJECT)
 }
 

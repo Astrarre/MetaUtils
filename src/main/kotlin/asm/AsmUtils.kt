@@ -1,7 +1,7 @@
 package asm
 
 import codegeneration.*
-import inputStream
+import util.inputStream
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.InnerClassNode
 import org.objectweb.asm.tree.MethodNode
-import writeBytes
+import util.writeBytes
 import java.nio.file.Path
 
 

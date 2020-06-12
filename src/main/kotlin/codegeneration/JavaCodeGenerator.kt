@@ -1,41 +1,44 @@
 package codegeneration
 
 
-import QualifiedName
 import api.AnyJavaType
 import api.JavaClassType
 import api.JavaReturnType
 import com.squareup.javapoet.*
 import signature.TypeArgumentDeclaration
+import util.PackageName
+import util.QualifiedName
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 
 @DslMarker
 annotation class CodeGeneratorDsl
 
+data class ClassInfo(
+    val shortName: String,
+    val visibility: Visibility,
+    /**
+     * Interfaces are NOT considered abstract
+     */
+    val isAbstract: Boolean,
+    val isInterface: Boolean,
+    val typeArguments: List<TypeArgumentDeclaration>,
+    val superClass: JavaClassType?,
+    val superInterfaces: List<JavaClassType>,
+    val body: JavaGeneratedClass.() -> Unit
+)
+
 @CodeGeneratorDsl
 object JavaCodeGenerator {
 
     fun writeClass(
-        visibility: Visibility,
-        isAbstract: Boolean,
-        isInterface: Boolean,
-        name: QualifiedName,
-        typeArguments: List<TypeArgumentDeclaration>,
-        /**
-         * Interfaces are NOT considered abstract
-         */
-        superClass: JavaClassType?,
-        superInterfaces: List<JavaClassType>,
-        writeTo: Path,
-        init: JavaGeneratedClass.() -> Unit
+        info: ClassInfo,
+        packageName: PackageName?,
+        writeTo: Path
     ) {
-        val generatedClass = generateClass(
-            visibility, isAbstract, isInterface, name.shortName.outerClass(),
-            typeArguments, superClass, superInterfaces, init
-        )
+        val generatedClass = generateClass(info)
         JavaFile.builder(
-            name.packageName?.toDotQualified() ?: "",
+            packageName?.toDotQualified() ?: "",
             generatedClass.build()
         ).skipJavaLangImports(true).build().writeTo(writeTo)
     }
@@ -43,17 +46,8 @@ object JavaCodeGenerator {
 
 }
 
-private fun generateClass(
-    visibility: Visibility,
-    isAbstract: Boolean,
-    isInterface: Boolean,
-    name: String,
-    typeArguments: List<TypeArgumentDeclaration>,
-    superClass: JavaClassType?,
-    superInterfaces: List<JavaClassType>,
-    init: JavaGeneratedClass.() -> Unit
-): TypeSpec.Builder {
-    val builder = if (isInterface) TypeSpec.interfaceBuilder(name) else TypeSpec.classBuilder(name)
+private fun generateClass(info: ClassInfo): TypeSpec.Builder  = with(info) {
+    val builder = if (isInterface) TypeSpec.interfaceBuilder(shortName) else TypeSpec.classBuilder(shortName)
     builder.apply {
         visibility.toModifier()?.let { addModifiers(it) }
         if (isAbstract) addModifiers(Modifier.ABSTRACT)
@@ -61,7 +55,7 @@ private fun generateClass(
         for (superInterface in superInterfaces) addSuperinterface(superInterface.toTypeName())
         addTypeVariables(typeArguments.map { it.toTypeName() })
     }
-    JavaGeneratedClass(builder, isInterface).init()
+    JavaGeneratedClass(builder, isInterface).body()
     return builder
 }
 
@@ -95,22 +89,8 @@ class JavaGeneratedClass(
     }
 
 
-    fun addInnerClass(
-        visibility: Visibility,
-        isStatic: Boolean,
-        isAbstract: Boolean,
-        isInterface: Boolean,
-        name: String,
-        typeArguments: List<TypeArgumentDeclaration>,
-        /**
-         * Interfaces are NOT considered abstract
-         */
-        superClass: JavaClassType?,
-        superInterfaces: List<JavaClassType>,
-        init: JavaGeneratedClass.() -> Unit
-    ) {
-        val generatedClass =
-            generateClass(visibility, isAbstract, isInterface, name, typeArguments, superClass, superInterfaces, init)
+    fun addInnerClass(info: ClassInfo, isStatic : Boolean) {
+        val generatedClass = generateClass(info)
         typeSpec.addType(generatedClass.apply {
             if (isStatic) addModifiers(Modifier.STATIC)
         }.build())

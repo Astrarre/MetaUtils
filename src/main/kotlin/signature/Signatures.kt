@@ -1,8 +1,8 @@
 package signature
 
-import PackageName
+import util.PackageName
 import descriptor.JvmPrimitiveType
-import includeIf
+import util.includeIf
 
 
 interface Signature

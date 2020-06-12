@@ -1,9 +1,7 @@
 package descriptor
 
-import QualifiedName
-import api.AnyJavaType
-import signature.*
-import toQualifiedName
+import util.QualifiedName
+import util.toQualifiedName
 
 @Suppress("UNCHECKED_CAST")
 fun <T : Descriptor> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
@@ -21,5 +19,3 @@ fun <T : Descriptor> Iterable<T>.remap(mapper: (className: QualifiedName) -> Qua
 const val JavaLangObjectString = "java/lang/Object"
 val JavaLangObjectName = JavaLangObjectString.toQualifiedName(dotQualified = false)
 val JavaLangObjectJvmType = ObjectType(JavaLangObjectName)
-val JavaLangObjectJavaType =  AnyJavaType(JavaLangObjectJvmType.toRawGenericType(), annotations = listOf())
-//val JavaLangObjectType = ObjectType(JavaLangObject)

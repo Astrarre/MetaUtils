@@ -1,7 +1,6 @@
 package signature
 
-import PackageName
-import descriptor.baseTypesCharMap
+import util.PackageName
 
 fun ClassSignature.Companion.readFrom(signature: String): ClassSignature = SignatureReader(signature).readClass()
 fun MethodSignature.Companion.readFrom(signature: String): MethodSignature = SignatureReader(signature).readMethod()

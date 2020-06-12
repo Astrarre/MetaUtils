@@ -1,3 +1,5 @@
+package util
+
 import java.io.InputStream
 import java.nio.file.*
 import java.util.jar.JarOutputStream
@@ -61,20 +63,8 @@ fun Path.copyTo(target: Path, overwrite: Boolean = true): Path? {
 }
 
 //fun getJvmBootClasses(): List<Path> = if (System.getProperty("java.version").toInt() <= 8) {
-//    System.getProperty("sun.boot.class.path").split(';').map { it.toPath() }
+//    System.getProperty("sun.boot.class.path").split(';').map { it.util.toPath() }
 //} else listOf<Path>() // It's part of class.path in jdk9+
 
 fun String.toPath(): Path = Paths.get(this)
 
-
-fun String.includeIf(boolean: Boolean) = if (boolean) this else ""
-fun <T> T.applyIf(boolean: Boolean, apply: (T) -> T) = if (boolean) apply(this) else this
-fun <T> List<T>.appendIfNotNull(value: T?) = if (value == null) this else this + value
-fun <T> List<T>.prependIfNotNull(value: T?) = value?.prependTo(this) ?: this
-
-fun <T : Any?> T.prependTo(list: List<T>): List<T> {
-    val appendedList = ArrayList<T>(list.size + 1)
-    appendedList.add(this)
-    appendedList.addAll(list)
-    return appendedList
-}

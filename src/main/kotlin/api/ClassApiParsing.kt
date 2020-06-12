@@ -3,18 +3,18 @@ package api
 import api.ClassApi.Variant.*
 import api.ClassApi.Variant.Annotation
 import api.ClassApi.Variant.Enum
-import applyIf
+import util.applyIf
 import asm.*
 import descriptor.*
-import hasExtension
-import isClassfile
-import openJar
+import util.hasExtension
+import util.isClassfile
+import util.openJar
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 import signature.*
-import toQualifiedName
-import walk
+import util.toQualifiedName
+import util.walk
 import java.nio.file.FileSystem
 import java.nio.file.Path
 

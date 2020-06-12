@@ -1,6 +1,6 @@
 package api
 
-import QualifiedName
+import util.QualifiedName
 import signature.ClassGenericType
 import signature.GenericTypeOrPrimitive
 import signature.GenericReturnType

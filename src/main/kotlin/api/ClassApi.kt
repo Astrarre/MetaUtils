@@ -1,14 +1,14 @@
 package api
 
-import QualifiedName
-import ShortClassName
 import codegeneration.ClassVisibility
 import codegeneration.Public
 import codegeneration.Visibility
 import descriptor.MethodDescriptor
 import descriptor.ObjectType
-import includeIf
 import signature.*
+import util.QualifiedName
+import util.ShortClassName
+import util.includeIf
 
 interface Visible {
     val visibility: Visibility
@@ -97,6 +97,7 @@ fun ClassApi.Method.getJvmDescriptor() = MethodDescriptor(
  */
 @OptIn(ExperimentalStdlibApi::class)
 fun ClassApi.listInnerClassChain(): List<ClassApi> = buildList<ClassApi> { addToInnerClassChain(this) }.reversed()
+private fun ClassApi.outerClassCount() = listInnerClassChain().size - 1
 private fun ClassApi.addToInnerClassChain(accumulated: MutableList<ClassApi>) {
     accumulated.add(this)
     outerClass?.value?.addToInnerClassChain(accumulated)
@@ -104,12 +105,15 @@ private fun ClassApi.addToInnerClassChain(accumulated: MutableList<ClassApi>) {
 
 val ClassApi.Method.isVoid get() = returnType.type == GenericReturnType.Void
 fun ClassApi.asType() = name.toClassGenericType(
-    listInnerClassChain().map { it.typeArguments.toTypeArgumentsOfNames() }
+    if (isStatic) {
+        // Only put type arguments at the end
+        (0 until outerClassCount()).map { null } + listOf(typeArguments.toTypeArgumentsOfNames())
+    } else listInnerClassChain().map { it.typeArguments.toTypeArgumentsOfNames() }
 ).noAnnotations()
 
 fun ClassApi.asRawType() = ObjectType(name).toRawJavaType()
 
-private fun List<TypeArgumentDeclaration>.toTypeArgumentsOfNames(): List<TypeArgument>? = if(isEmpty()) null else map {
+private fun List<TypeArgumentDeclaration>.toTypeArgumentsOfNames(): List<TypeArgument>? = if (isEmpty()) null else map {
     TypeArgument.SpecificType(TypeVariable(it.name), wildcardType = null)
 }
 
