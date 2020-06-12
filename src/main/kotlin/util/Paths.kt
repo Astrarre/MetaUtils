@@ -44,6 +44,7 @@ fun Path.unzipJar(
 fun Path.convertDirToJar(destination: Path = parent.resolve("$fileName.jar"), overwrite: Boolean = true): Path {
     if (overwrite) destination.deleteIfExists()
     destination.createJar()
+    println("Creating jar at $destination")
     destination.openJar { destJar ->
         this.walk().forEach {
             val relativePath = this.relativize(it)

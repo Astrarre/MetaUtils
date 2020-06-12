@@ -73,17 +73,6 @@ open class BuildMetaUtilsExtension(private val project: Project) {
                             )
                             classNode.signature = newSignature.toClassfileName()
                         }
-
-//                           val newsig____test = ClassSignature(typeArguments = null,
-//                            superClass = ClassGenericType.fromRawClassString("java/lang/Object"),
-//                               superInterfaces = listOf(ClassGenericType.fromRawClassString("java/lang/Thread")))
-//
-//                        classNode.interfaces.add("java/lang/Thread")
-//
-////                        val newsig____test = ClassSignature(typeArguments = null,
-////                            superClass = ClassGenericType.fromRawClassString("java/lang/Thread"), superInterfaces = listOf())
-//
-//                        classNode.signature = newsig____test.toClassfileName()
                     }
 
                     output.parent.createDirectories()

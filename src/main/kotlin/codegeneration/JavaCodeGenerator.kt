@@ -135,9 +135,8 @@ class JavaGeneratedClass(
         )
     }
 
-//    private fun Boolean.staticModifier() = if(this) Modifier.STATIC
 
-    /*override*/  fun addField(
+      fun addField(
         name: String,
         type: AnyJavaType,
         visibility: Visibility,
@@ -159,10 +158,6 @@ class JavaGeneratedClass(
         )
     }
 
-//    fun setSuperclass(type: ObjectType) {
-//        typeSpec.superclass(type.toTypeName())
-//    }
-
     fun build(): TypeSpec = typeSpec.build()
 
 
@@ -171,50 +166,11 @@ class JavaGeneratedClass(
 
 @CodeGeneratorDsl
 class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) {
-//    fun addStatement(format: String, vararg typeArgs: AnyType) {
-//        methodSpec.addStatement(format, *typeArgs.map { it.toTypeName() }.toTypedArray())
-//    }
 
     fun addStatement(statement: Statement) {
         val (format, arguments) = JavaCodeWriter().write(statement)
         methodSpec.addStatement(format, *arguments.toTypedArray())
     }
-
-//    fun addFunctionCall(
-//        /**
-//         * receiver = null for implicit receiver
-//         */
-//        receiver: Statement?,
-//        /**
-//         * methodName = null for constructors
-//         */
-//        methodName: String?,
-//        parameters: List<Expression>,
-//        returnResult: Boolean
-//    ) {
-//        require(receiver != null || methodName != null)
-//        val allArgs = parameters.flatMap { it.toJavaCode().formatArguments }.toMutableList()
-//
-//        val receiverPart = if (receiver != null) {
-//            val (receiverString, receiverArgs) = receiver.toJavaCode()
-//            allArgs.addAll(receiverArgs)
-//            receiverString
-//        } else ""
-//
-//        val receiverMethodNameSeparator = ".".addIf(receiver != null && methodName != null)
-//
-//        val string = "return ".addIf(returnResult) +
-//                receiverPart + receiverMethodNameSeparator + (methodName ?: "") + "(" +
-//                parameters.joinToString(", ") { it.toJavaCode().string } + ")"
-//        methodSpec.addStatement(string, *allArgs.toTypedArray())
-//    }
-//
-//    // i.e. this() or super()
-//    fun addSelfConstructorCall(type: SelfConstructorType, parameters: List<Expression>) {
-//        val allArgs = parameters.flatMap { it.toJavaCode().formatArguments }
-//        val string = type.toJavaCode() + "(" + parameters.joinToString(", ") { it.toJavaCode().string } + ")"
-//        methodSpec.addStatement(string, *allArgs.toTypedArray())
-//    }
 
     fun addComment(comment: String) {
         methodSpec.addComment(comment)
