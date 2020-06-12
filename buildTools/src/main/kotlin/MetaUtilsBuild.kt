@@ -49,7 +49,7 @@ open class BuildMetaUtilsExtension(private val project: Project) {
     fun createAttachInterfacesTask(targetClassDirs: Set<File>): FileCollection = with(project) {
         val targetClassDir = targetClassDirs.first { it.parentFile.name == "java" }
         val targetClassPath = targetClassDir.toPath()
-        val destinationJar = project.file("build/resources/test/mcJarWithInterfaces.jar")
+        val destinationJar = project.file("testdata/mcJarWithInterfaces.jar")
         tasks.create("attachInterfaces") { task ->
             task.doLast {
                 val allInputs = targetClassPath.recursiveChildren().filter { !it.isDirectory() }.toList()
