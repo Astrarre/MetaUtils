@@ -19,6 +19,7 @@ interface Visible {
  * [ClassApi]es use dot.separated.format for the packageName always!
  */
 class ClassApi(
+    val annotations : List<JavaAnnotation>,
     override val visibility: ClassVisibility,
     val isStatic: Boolean,
     val isFinal: Boolean,
@@ -55,6 +56,7 @@ class ClassApi(
         val returnType: JavaReturnType,
         val parameters: Map<String, AnyJavaType>,
         val typeArguments: List<TypeArgumentDeclaration>,
+        val throws : List<ThrowableType>,
         override val visibility: Visibility,
         override val isStatic: Boolean
     ) : Member() {

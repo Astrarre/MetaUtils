@@ -3,18 +3,14 @@ package api
 import api.ClassApi.Variant.*
 import api.ClassApi.Variant.Annotation
 import api.ClassApi.Variant.Enum
-import util.applyIf
 import asm.*
 import descriptor.*
-import util.hasExtension
-import util.isClassfile
-import util.openJar
+import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 import signature.*
-import util.toQualifiedName
-import util.walk
+import util.*
 import java.nio.file.FileSystem
 import java.nio.file.Path
 
@@ -26,6 +22,7 @@ fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
     return jarPath.openJar { jar ->
         jar.getPath("/").walk()
             .filter { it.isClassfile() && '$' !in it.toString() }
+//            .filter { "Annotations" in it.toString() }
             .map { readSingularClass(jar, it, outerClass = null, isStatic = false) }
             .toList()
     }
@@ -84,10 +81,21 @@ private fun ClassApi.Companion.readSingularClass(
         visibility = classNode.visibility,
         isStatic = isStatic,
         isFinal = classNode.isfinal,
-        typeArguments = signature.typeArguments ?: listOf()
+        typeArguments = signature.typeArguments ?: listOf(),
+        annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations)
     )
 
     return classApi
+}
+
+private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<AnnotationNode>?): List<JavaAnnotation> {
+    val combined = when {
+        visible == null -> invisible
+        invisible == null -> visible
+        else -> visible + invisible
+    }
+    combined ?: return listOf()
+    return combined.map { JavaAnnotation(FieldType.read(it.desc) as ObjectType) }
 }
 
 private fun readField(field: FieldNode): ClassApi.Field {
@@ -95,8 +103,14 @@ private fun readField(field: FieldNode): ClassApi.Field {
     else FieldDescriptor.read(field.desc).toRawGenericType()
 
     return ClassApi.Field(
-        name = field.name, type = AnyJavaType(signature, annotations = listOf()),
-        isStatic = field.isStatic, isFinal = field.isFinal, visibility = field.visibility
+        name = field.name,
+        type = AnyJavaType(
+            signature,
+            annotations = parseAnnotations(field.visibleAnnotations, field.invisibleAnnotations)
+        ),
+        isStatic = field.isStatic,
+        isFinal = field.isFinal,
+        visibility = field.visibility
     )
 }
 
@@ -109,7 +123,8 @@ private fun readMethod(
         val descriptor = MethodDescriptor.read(method.desc)
         MethodSignature(
             typeArguments = listOf(), parameterTypes = descriptor.parameterDescriptors.map { it.toRawGenericType() },
-            returnType = descriptor.returnDescriptor.toRawGenericType(), throwsSignatures = listOf()
+            returnType = descriptor.returnDescriptor.toRawGenericType(),
+            throwsSignatures = method.exceptions.map { ClassGenericType.fromRawClassString(it) }
         )
     }
     val parameterNames = inferParameterNames(method, classNode, signature.parameterTypes.size)
@@ -119,9 +134,20 @@ private fun readMethod(
     return ClassApi.Method(
         name = method.name,
         typeArguments = signature.typeArguments ?: listOf(),
-        returnType = JavaReturnType(signature.returnType, annotations = listOf()),
+        returnType = JavaReturnType(
+            signature.returnType,
+            annotations = parseAnnotations(method.visibleAnnotations, method.invisibleAnnotations)
+        ),
         parameters = parameterNames.zip(signature.parameterTypes)
-            .map { (name, type) -> name to AnyJavaType(type, annotations = listOf()) }.toMap(),
+            .mapIndexed { index, (name, type) ->
+                name to AnyJavaType(
+                    type, annotations = parseAnnotations(
+                        method.visibleParameterAnnotations?.get(index),
+                        method.invisibleParameterAnnotations?.get(index)
+                    )
+                )
+            }.toMap(),
+        throws = signature.throwsSignatures,
         isStatic = method.isStatic,
         visibility = visibility
     )

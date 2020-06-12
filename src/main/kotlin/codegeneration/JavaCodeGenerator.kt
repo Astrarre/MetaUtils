@@ -2,12 +2,13 @@ package codegeneration
 
 
 import api.AnyJavaType
+import api.JavaAnnotation
 import api.JavaClassType
 import api.JavaReturnType
 import com.squareup.javapoet.*
+import signature.ThrowableType
 import signature.TypeArgumentDeclaration
 import util.PackageName
-import util.QualifiedName
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 
@@ -25,6 +26,7 @@ data class ClassInfo(
     val typeArguments: List<TypeArgumentDeclaration>,
     val superClass: JavaClassType?,
     val superInterfaces: List<JavaClassType>,
+    val annotations: List<JavaAnnotation>,
     val body: JavaGeneratedClass.() -> Unit
 )
 
@@ -46,7 +48,7 @@ object JavaCodeGenerator {
 
 }
 
-private fun generateClass(info: ClassInfo): TypeSpec.Builder  = with(info) {
+private fun generateClass(info: ClassInfo): TypeSpec.Builder = with(info) {
     val builder = if (isInterface) TypeSpec.interfaceBuilder(shortName) else TypeSpec.classBuilder(shortName)
     builder.apply {
         visibility.toModifier()?.let { addModifiers(it) }
@@ -54,6 +56,7 @@ private fun generateClass(info: ClassInfo): TypeSpec.Builder  = with(info) {
         if (superClass != null) superclass(superClass.toTypeName())
         for (superInterface in superInterfaces) addSuperinterface(superInterface.toTypeName())
         addTypeVariables(typeArguments.map { it.toTypeName() })
+        addAnnotations(this@with.annotations.map { it.toAnnotationSpec() })
     }
     JavaGeneratedClass(builder, isInterface).body()
     return builder
@@ -74,22 +77,27 @@ class JavaGeneratedClass(
         name: String,
         parameters: Map<String, AnyJavaType>,
         returnType: JavaReturnType?,
+        throws: List<ThrowableType>,
         body: JavaGeneratedMethod.() -> Unit
     ) {
         addMethodImpl(visibility, parameters, typeArguments, MethodSpec.methodBuilder(name), internalConfig = {
-            if (returnType != null) returns(returnType.toTypeName())
+            if (returnType != null) {
+                returns(returnType.toTypeName())
+                addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
+            }
 
             if (abstract) addModifiers(Modifier.ABSTRACT)
             else if (static) addModifiers(Modifier.STATIC)
             else if (isInterface) addModifiers(Modifier.DEFAULT)
 
             if (final) addModifiers(Modifier.FINAL)
+            addExceptions(throws.map { it.toTypeName() })
         }, userConfig = body)
 
     }
 
 
-    fun addInnerClass(info: ClassInfo, isStatic : Boolean) {
+    fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
         val generatedClass = generateClass(info)
         typeSpec.addType(generatedClass.apply {
             if (isStatic) addModifiers(Modifier.STATIC)
@@ -125,7 +133,9 @@ class JavaGeneratedClass(
             JavaGeneratedMethod(builder
                 .apply {
                     addParameters(parameters.map { (name, type) ->
-                        ParameterSpec.builder(type.toTypeName(), name).build()
+                        ParameterSpec.builder(type.toTypeName(), name).apply {
+                            addAnnotations(type.annotations.map { it.toAnnotationSpec() })
+                        }.build()
                     })
                     visibility.toModifier()?.let { addModifiers(it) }
                     internalConfig()
@@ -136,7 +146,7 @@ class JavaGeneratedClass(
     }
 
 
-      fun addField(
+    fun addField(
         name: String,
         type: AnyJavaType,
         visibility: Visibility,

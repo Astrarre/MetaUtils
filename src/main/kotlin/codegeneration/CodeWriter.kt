@@ -1,8 +1,10 @@
 package codegeneration
 
+import api.JavaAnnotation
 import api.JavaType
 import com.squareup.javapoet.*
 import descriptor.JvmPrimitiveType
+import descriptor.ObjectType
 import util.prependIfNotNull
 import signature.*
 
@@ -144,6 +146,16 @@ private fun TypeArgument.toTypeName(): TypeName = when (this) {
         }
     }
     TypeArgument.AnyType -> WildcardTypeName.subtypeOf(TypeName.OBJECT)
+}
+
+fun JavaAnnotation.toAnnotationSpec(): AnnotationSpec = AnnotationSpec.builder(type.toTypeName()).build()
+
+private fun ObjectType.toTypeName(): ClassName {
+    val shortName = fullClassName.shortName
+    return ClassName.get(
+        fullClassName.packageName?.toDotQualified() ?: "", shortName.outerClass(),
+        *shortName.innerClasses().toTypedArray()
+    )
 }
 
 //TODO: replace with normal string?
