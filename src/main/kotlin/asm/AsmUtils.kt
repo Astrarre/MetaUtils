@@ -5,10 +5,7 @@ import util.inputStream
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.InnerClassNode
-import org.objectweb.asm.tree.MethodNode
+import org.objectweb.asm.tree.*
 import util.writeBytes
 import java.nio.file.Path
 
@@ -59,6 +56,7 @@ private val Int.visibility: Visibility
     }
 
 val MethodNode.isStatic get() = access.static
+val MethodNode.isFinal get() = access.final
 val MethodNode.isPrivate get() = access.private
 val MethodNode.isProtected get() = access.protected
 val MethodNode.isPublic get() = access.public
@@ -91,3 +89,5 @@ val ClassNode.visibility: ClassVisibility
     }
 
 val InnerClassNode.isStatic get() = access.opCode(Opcodes.ACC_STATIC)
+
+val ParameterNode.isMandated get() = access.opCode(Opcodes.ACC_MANDATED)

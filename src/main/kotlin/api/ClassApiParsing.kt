@@ -11,7 +11,6 @@ import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 import signature.*
 import util.*
-import java.nio.file.FileSystem
 import java.nio.file.Path
 
 fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
@@ -20,18 +19,36 @@ fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
     // Only pass top-level classes into readSingularClass()
 
     return jarPath.openJar { jar ->
-        jar.getPath("/").walk()
-            .filter { it.isClassfile() && '$' !in it.toString() }
-//            .filter { "Annotations" in it.toString() }
-            .map { readSingularClass(jar, it, outerClass = null, isStatic = false) }
-            .toList()
+        val root = jar.getPath("/")
+        root.walk().asSequence().readFromSequence(root)
     }
-
 }
 
+
+fun ClassApi.Companion.readFromDirectory(dirPath: Path): Collection<ClassApi> {
+    require(dirPath.isDirectory()) { "Specified path $dirPath is not a directory" }
+
+    return dirPath.recursiveChildren().readFromSequence(dirPath)
+}
+
+fun ClassApi.Companion.readFromList(
+    list: List<Path>,
+    rootPath: Path
+): Collection<ClassApi> =
+    list.asSequence().readFromSequence(rootPath)
+
+private fun Sequence<Path>.readFromSequence(rootPath: Path): Collection<ClassApi> = filter {
+    // Only pass top-level classes into readSingularClass()
+    it.isClassfile() && '$' !in it.toString()
+}
+//            .filter { "Concrete" in it.toString() }
+    .map { readSingularClass(rootPath, it, outerClass = null, isStatic = false) }
+    .toList()
+
+
 // isStatic information is passed by the parent class for inner classes
-private fun ClassApi.Companion.readSingularClass(
-    fs: FileSystem,
+private fun readSingularClass(
+    rootPath: Path,
     path: Path,
     outerClass: Lazy<ClassApi>?,
     isStatic: Boolean
@@ -66,7 +83,12 @@ private fun ClassApi.Companion.readSingularClass(
         innerClasses = classNode.innerClasses
             .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
             .map {
-                readSingularClass(fs, fs.getPath(it.name + ".class"), lazy { classApi!! }, isStatic = it.isStatic)
+                readSingularClass(
+                    rootPath,
+                    rootPath.resolve(it.name + ".class"),
+                    lazy { classApi!! },
+                    isStatic = it.isStatic
+                )
             },
         outerClass = outerClass,
         classVariant = with(classNode) {
@@ -115,14 +137,27 @@ private fun readField(field: FieldNode): ClassApi.Field {
 }
 
 
+// Generated parameters are generated $this garbage that come from for example inner classes
+private fun getNonGeneratedParameterDescriptors(
+    descriptor: MethodDescriptor,
+    method: MethodNode
+): List<ParameterDescriptor> {
+    if (method.parameters == null) return descriptor.parameterDescriptors
+    val generatedIndices = method.parameters.mapIndexed { i, node -> i to node }.filter { '$' in it.second.name }
+        .map { it.first }
+
+    return descriptor.parameterDescriptors.filterIndexed { i, _ -> i !in generatedIndices }
+}
+
 private fun readMethod(
     method: MethodNode,
     classNode: ClassNode
 ): ClassApi.Method {
     val signature = if (method.signature != null) MethodSignature.readFrom(method.signature) else {
         val descriptor = MethodDescriptor.read(method.desc)
+        val parameters = getNonGeneratedParameterDescriptors(descriptor, method)
         MethodSignature(
-            typeArguments = listOf(), parameterTypes = descriptor.parameterDescriptors.map { it.toRawGenericType() },
+            typeArguments = null, parameterTypes = parameters.map { it.toRawGenericType() },
             returnType = descriptor.returnDescriptor.toRawGenericType(),
             throwsSignatures = method.exceptions.map { ClassGenericType.fromRawClassString(it) }
         )
@@ -147,9 +182,10 @@ private fun readMethod(
                     )
                 )
             }.toMap(),
-        throws = signature.throwsSignatures,
+        throws = signature.throwsSignatures.map { it.noAnnotations() },
         isStatic = method.isStatic,
-        visibility = visibility
+        visibility = visibility,
+        isFinal = method.isFinal
     )
 }
 
@@ -162,7 +198,7 @@ private fun inferParameterNames(
     return when {
         method.parameters != null -> {
             // Some methods use a parameter names field instead of local variables
-            method.parameters.map { it.name }
+            method.parameters.filter { '$' !in it.name }.map { it.name }
         }
         locals != null -> {
             val nonThisLocalNames = locals.filter { it.name != "this" }.map { it.name }

@@ -1,26 +1,37 @@
 package util
 
+import java.nio.file.Path
+import java.nio.file.Paths
+
 data class QualifiedName(
     // Dot or slash qualified
     val packageName: PackageName?, val shortName: ShortClassName
 ) {
 //    fun toQualifiedString() = (packageName ?: QualifiedString.Empty) + shortName.toDollarQualified()
 
-    private fun toQualified(packageSeparator: String, classSeparator : String): String = if (packageName == null) shortName.toDollarQualifiedString() else
-        packageName.toQualified(packageSeparator) + packageSeparator + shortName.toQualified(classSeparator)
+    private fun toQualified(packageSeparator: String, classSeparator: String): String =
+        if (packageName == null) shortName.toDollarQualifiedString() else
+            packageName.toQualified(packageSeparator) + packageSeparator + shortName.toQualified(classSeparator)
 
-    private fun Boolean.toClassSeparator() = if(this) "$" else "."
 
     // JavaPoet, reflection
-    fun toDotQualifiedString(dollarQualified: Boolean = true) = toQualified(".", dollarQualified.toClassSeparator())
+    fun toDotQualifiedString(dollarQualified: Boolean = true) =
+        toString(dotQualified = true, dollarQualified = dollarQualified)
+
     // ASM, JVM
-    fun toSlashQualifiedString(dollarQualified: Boolean = true) = toQualified("/", dollarQualified.toClassSeparator())
+    fun toSlashQualifiedString(dollarQualified: Boolean = true) =
+        toString(dotQualified = false, dollarQualified = dollarQualified)
 
-    override fun toString(): String  = toDotQualifiedString(dollarQualified = true)
-    // Inner classes
-//    fun toDollarQualifiedString() = toQualified("$")
+    fun toString(dotQualified: Boolean = false, dollarQualified: Boolean = true): String {
+        val packageSeparator = if (dotQualified) "." else "/"
+        val classSeparator = if (dollarQualified) "$" else "."
+        return toQualified(packageSeparator, classSeparator)
+    }
 
-    fun packageStartsWith(vararg startingComponents: String): Boolean = packageName?.startsWith(*startingComponents) == true
+    override fun toString(): String = toDotQualifiedString(dollarQualified = true)
+
+    fun packageStartsWith(vararg startingComponents: String): Boolean =
+        packageName?.startsWith(*startingComponents) == true
 }
 
 //fun QualifiedString.toFullyQualifiedName(): FullyQualifiedName =
@@ -34,7 +45,7 @@ fun String.toPackageName(dotQualified: Boolean): PackageName {
     return PackageName(split(separator))
 }
 
-fun String.toShortClassName(dollarQualified : Boolean = true): ShortClassName =
+fun String.toShortClassName(dollarQualified: Boolean = true): ShortClassName =
     ShortClassName(split(if (dollarQualified) "$" else "."))
 
 fun String.toQualifiedName(dotQualified: Boolean, dollarQualified: Boolean = true): QualifiedName {
@@ -50,8 +61,8 @@ fun String.toQualifiedName(dotQualified: Boolean, dollarQualified: Boolean = tru
     )
 }
 
- fun String.prependToQualified(qualifiedString: PackageName) =
-     PackageName(this.prependTo(qualifiedString.components))
+fun String.prependToQualified(qualifiedString: PackageName) =
+    PackageName(this.prependTo(qualifiedString.components))
 // fun String?.util.prependIfNotNull(qualifiedString: QualifiedString) = if(this == null) qualifiedString else
 //     QualifiedString(this.util.prependTo(qualifiedString.components))
 
@@ -66,22 +77,25 @@ sealed class AbstractQualifiedString {
     }
 
 
-
     internal fun toQualified(separator: String) = components.joinToString(separator)
 
 }
 
-data class PackageName(override val components: List<String>) : AbstractQualifiedString(){
+fun PackageName?.toPath(): Path = if (this == null || components.isEmpty()) Paths.get("") else {
+    Paths.get(components[0], *components.drop(1).toTypedArray())
+}
+
+data class PackageName(override val components: List<String>) : AbstractQualifiedString() {
     companion object {
         val Empty = PackageName(listOf())
     }
 
-    operator fun plus(other : PackageName) =
+    operator fun plus(other: PackageName) =
         PackageName(this.components + other.components)
+
     fun toDotQualified() = toQualified(".")
     fun toSlashQualified() = toQualified("/")
     override fun toString(): String = toSlashQualified()
-
 
 
 //    fun splitPackageClass(): util.QualifiedName {
@@ -91,10 +105,11 @@ data class PackageName(override val components: List<String>) : AbstractQualifie
 //    }
 }
 
-data class ShortClassName(override val components: List<String>) : AbstractQualifiedString(){
+data class ShortClassName(override val components: List<String>) : AbstractQualifiedString() {
     init {
         require(components.isNotEmpty())
     }
+
     fun toDollarQualifiedString() = toQualified("$")
     fun toDotQualifiedString() = toQualified(".")
     fun outerClass() = components[0]

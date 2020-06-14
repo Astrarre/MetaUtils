@@ -2,15 +2,15 @@
 
 package signature
 
-import util.QualifiedName
-import util.ShortClassName
 import api.AnyJavaType
 import api.JavaClassType
 import api.JavaType
 import descriptor.*
+import util.QualifiedName
+import util.ShortClassName
 import util.toQualifiedName
 
-val JavaLangObjectJavaType =  AnyJavaType(JavaLangObjectJvmType.toRawGenericType(), annotations = listOf())
+val JavaLangObjectJavaType = AnyJavaType(JavaLangObjectJvmType.toRawGenericType(), annotations = listOf())
 
 
 fun <T : GenericReturnType> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
@@ -42,9 +42,19 @@ fun GenericReturnType.visitContainedClasses(visitor: (ClassGenericType) -> Unit)
 }
 
 
-
 fun ClassGenericType.Companion.fromRawClassString(string: String, dotQualified: Boolean = false): ClassGenericType {
     return string.toQualifiedName(dotQualified).toRawGenericType()
+}
+
+/**
+ * Will only put the type args at the INNERMOST class!
+ */
+fun ClassGenericType.Companion.fromNameAndTypeArgs(
+    name: QualifiedName,
+    typeArgs: List<TypeArgument>?
+): ClassGenericType {
+    val outerClassesArgs: List<List<TypeArgument>?> = (0 until (name.shortName.components.size - 1)).map { null }
+    return name.toClassGenericType(outerClassesArgs + listOf(typeArgs))
 }
 
 fun ClassGenericType.toJvmQualifiedName() = QualifiedName(
@@ -79,9 +89,10 @@ fun QualifiedName.toRawGenericType(): ClassGenericType = toClassGenericType(shor
  *  Each element in typeArgsChain is for an element in the inner class name chain.
  *  Each element contains the type args for each class name in the chain.
  */
-fun QualifiedName.toClassGenericType(typeArgsChain: List<List<TypeArgument>?>): ClassGenericType = ClassGenericType(packageName,
-    shortName.components.zip(typeArgsChain).map { (name, args) -> SimpleClassGenericType(name, args) }
-)
+fun QualifiedName.toClassGenericType(typeArgsChain: List<List<TypeArgument>?>): ClassGenericType =
+    ClassGenericType(packageName,
+        shortName.components.zip(typeArgsChain).map { (name, args) -> SimpleClassGenericType(name, args) }
+    )
 
 fun ObjectType.toRawGenericType(): ClassGenericType = fullClassName.toRawGenericType()
 fun ObjectType.toRawJavaType(): JavaClassType = JavaClassType(fullClassName.toRawGenericType(), annotations = listOf())
@@ -127,4 +138,8 @@ private fun ClassGenericType.remap(mapper: (className: QualifiedName) -> Qualifi
 private fun TypeArgument.remap(mapper: (className: QualifiedName) -> QualifiedName?): TypeArgument = when (this) {
     is TypeArgument.SpecificType -> copy(type = type.remap(mapper))
     TypeArgument.AnyType -> TypeArgument.AnyType
+}
+
+fun List<TypeArgumentDeclaration>.toTypeArgumentsOfNames(): List<TypeArgument>? = if (isEmpty()) null else map {
+    TypeArgument.SpecificType(TypeVariable(it.name), wildcardType = null)
 }

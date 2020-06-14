@@ -1,12 +1,8 @@
 package codegeneration
 
 
-import api.AnyJavaType
-import api.JavaAnnotation
-import api.JavaClassType
-import api.JavaReturnType
+import api.*
 import com.squareup.javapoet.*
-import signature.ThrowableType
 import signature.TypeArgumentDeclaration
 import util.PackageName
 import java.nio.file.Path
@@ -15,25 +11,12 @@ import javax.lang.model.element.Modifier
 @DslMarker
 annotation class CodeGeneratorDsl
 
-data class ClassInfo(
-    val shortName: String,
-    val visibility: Visibility,
-    /**
-     * Interfaces are NOT considered abstract
-     */
-    val isAbstract: Boolean,
-    val isInterface: Boolean,
-    val typeArguments: List<TypeArgumentDeclaration>,
-    val superClass: JavaClassType?,
-    val superInterfaces: List<JavaClassType>,
-    val annotations: List<JavaAnnotation>,
-    val body: JavaGeneratedClass.() -> Unit
-)
+
 
 @CodeGeneratorDsl
-object JavaCodeGenerator {
+object JavaCodeGenerator : CodeGenerator {
 
-    fun writeClass(
+    override fun writeClass(
         info: ClassInfo,
         packageName: PackageName?,
         writeTo: Path
@@ -62,26 +45,43 @@ private fun generateClass(info: ClassInfo): TypeSpec.Builder = with(info) {
     return builder
 }
 
+private fun generateMethod(info: MethodInfo, name: String?): MethodSpec.Builder = with(info) {
+    val builder = if (name != null) MethodSpec.methodBuilder(name) else MethodSpec.constructorBuilder()
+    builder.apply {
+        JavaGeneratedMethod(this).apply(body)
+        addParameters(info.parameters.map { (name, type) ->
+            ParameterSpec.builder(type.toTypeName(), name).apply {
+                addAnnotations(type.annotations.map { it.toAnnotationSpec() })
+            }.build()
+        })
+        addExceptions(throws.map { it.toTypeName() })
+        visibility.toModifier()?.let { addModifiers(it) }
+    }
+
+}
 
 @CodeGeneratorDsl
 class JavaGeneratedClass(
     private val typeSpec: TypeSpec.Builder,
     private val isInterface: Boolean
-) {
-    fun addMethod(
-        visibility: Visibility,
+) : GeneratedClass {
+
+
+    override fun addMethod(
+        methodInfo: MethodInfo,
         static: Boolean,
         final: Boolean,
         abstract: Boolean,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
-        parameters: Map<String, AnyJavaType>,
-        returnType: JavaReturnType?,
-        throws: List<ThrowableType>,
-        body: JavaGeneratedMethod.() -> Unit
+        returnType: JavaReturnType?
     ) {
-        addMethodImpl(visibility, parameters, typeArguments, MethodSpec.methodBuilder(name), internalConfig = {
+        val method = generateMethod(methodInfo, name).apply {
+            addTypeVariables(typeArguments.map { it.toTypeName() })
             if (returnType != null) {
+                //TODO: the fact the annotations are attached to the return type is a bit wrong,
+                // but in java if you put the same annotation on the method and return type
+                // it counts as duplicating the annotation...
                 returns(returnType.toTypeName())
                 addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
             }
@@ -91,62 +91,25 @@ class JavaGeneratedClass(
             else if (isInterface) addModifiers(Modifier.DEFAULT)
 
             if (final) addModifiers(Modifier.FINAL)
-            addExceptions(throws.map { it.toTypeName() })
-        }, userConfig = body)
 
+        }.build()
+
+        typeSpec.addMethod(method)
     }
 
+    override fun addConstructor(info: MethodInfo) {
+        require(!isInterface) { "Interfaces don't have constructors" }
+        typeSpec.addMethod(generateMethod(info, name = null).build())
+    }
 
-    fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
+    override fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
         val generatedClass = generateClass(info)
         typeSpec.addType(generatedClass.apply {
             if (isStatic) addModifiers(Modifier.STATIC)
         }.build())
     }
 
-
-    fun addConstructor(
-        visibility: Visibility,
-        parameters: Map<String, AnyJavaType>,
-        init: JavaGeneratedMethod.() -> Unit
-    ) {
-        require(!isInterface) { "Interfaces don't have constructors" }
-        addMethodImpl(
-            visibility,
-            parameters,
-            listOf(),
-            MethodSpec.constructorBuilder(),
-            internalConfig = {},
-            userConfig = init
-        )
-    }
-
-    private fun addMethodImpl(
-        visibility: Visibility,
-        parameters: Map<String, AnyJavaType>,
-        typeArguments: List<TypeArgumentDeclaration>,
-        builder: MethodSpec.Builder,
-        internalConfig: MethodSpec.Builder.() -> Unit,
-        userConfig: JavaGeneratedMethod.() -> Unit
-    ) {
-        typeSpec.addMethod(
-            JavaGeneratedMethod(builder
-                .apply {
-                    addParameters(parameters.map { (name, type) ->
-                        ParameterSpec.builder(type.toTypeName(), name).apply {
-                            addAnnotations(type.annotations.map { it.toAnnotationSpec() })
-                        }.build()
-                    })
-                    visibility.toModifier()?.let { addModifiers(it) }
-                    internalConfig()
-                    addTypeVariables(typeArguments.map { it.toTypeName() })
-                }).apply(userConfig)
-                .build()
-        )
-    }
-
-
-    fun addField(
+    override fun addField(
         name: String,
         type: AnyJavaType,
         visibility: Visibility,
@@ -161,32 +124,32 @@ class JavaGeneratedClass(
                 if (final) addModifiers(Modifier.FINAL)
                 if (initializer != null) {
                     val (format, arguments) = JavaCodeWriter().write(initializer)
-                    initializer(format, *arguments.toTypedArray())
+                    initializer(format, *arguments.toTypeNames())
                 }
+                addAnnotations(type.annotations.map { it.toAnnotationSpec() })
             }
             .build()
         )
     }
 
-    fun build(): TypeSpec = typeSpec.build()
-
 
 }
 
+private fun List<JavaType<*>>.toTypeNames() = map { it.toTypeName() }.toTypedArray()
+
 
 @CodeGeneratorDsl
-class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) {
+class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) : GeneratedMethod {
 
-    fun addStatement(statement: Statement) {
+    override fun addStatement(statement: Statement) {
         val (format, arguments) = JavaCodeWriter().write(statement)
-        methodSpec.addStatement(format, *arguments.toTypedArray())
+        methodSpec.addStatement(format, *arguments.toTypeNames())
     }
 
-    fun addComment(comment: String) {
+    override fun addComment(comment: String) {
         methodSpec.addComment(comment)
     }
 
-    fun build(): MethodSpec = methodSpec.build()
 }
 
 
