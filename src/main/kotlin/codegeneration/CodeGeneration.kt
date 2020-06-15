@@ -8,7 +8,7 @@ import java.nio.file.Path
 import javax.lang.model.element.Modifier
 import kotlin.contracts.contract
 
-data class ClassInfo(
+class ClassInfo(
     val shortName: String,
     val visibility: Visibility,
     /**
@@ -43,9 +43,9 @@ interface CodeGenerator {
 interface GeneratedClass {
     fun addMethod(
         methodInfo: MethodInfo,
-        static: Boolean,
-        final: Boolean,
-        abstract: Boolean,
+        isStatic: Boolean,
+        isFinal: Boolean,
+        isAbstract: Boolean,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
         returnType: JavaReturnType?
@@ -56,8 +56,8 @@ interface GeneratedClass {
         name: String,
         type: AnyJavaType,
         visibility: Visibility,
-        static: Boolean,
-        final: Boolean,
+        isStatic: Boolean,
+        isFinal: Boolean,
         initializer: Expression?
     )
 }

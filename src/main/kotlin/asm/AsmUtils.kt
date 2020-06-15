@@ -57,6 +57,7 @@ private val Int.visibility: Visibility
 
 val MethodNode.isStatic get() = access.static
 val MethodNode.isFinal get() = access.final
+val MethodNode.isAbstract get() = access.opCode(Opcodes.ACC_ABSTRACT)
 val MethodNode.isPrivate get() = access.private
 val MethodNode.isProtected get() = access.protected
 val MethodNode.isPublic get() = access.public

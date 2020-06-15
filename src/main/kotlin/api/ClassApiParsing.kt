@@ -185,7 +185,8 @@ private fun readMethod(
         throws = signature.throwsSignatures.map { it.noAnnotations() },
         isStatic = method.isStatic,
         visibility = visibility,
-        isFinal = method.isFinal
+        isFinal = method.isFinal,
+        isAbstract = method.isAbstract
     )
 }
 

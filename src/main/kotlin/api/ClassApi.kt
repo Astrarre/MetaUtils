@@ -64,7 +64,8 @@ class ClassApi(
         val throws : List<JavaThrowableType>,
         override val visibility: Visibility,
         override val isStatic: Boolean,
-        val isFinal: Boolean
+        val isFinal: Boolean,
+        val isAbstract: Boolean
     ) : Member() {
         override fun toString() = "static ".includeIf(isStatic) +
                 "$name(${parameters.map { (name, type) -> "$name: $type" }}): $returnType"

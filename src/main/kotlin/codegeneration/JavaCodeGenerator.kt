@@ -69,9 +69,9 @@ class JavaGeneratedClass(
 
     override fun addMethod(
         methodInfo: MethodInfo,
-        static: Boolean,
-        final: Boolean,
-        abstract: Boolean,
+        isStatic: Boolean,
+        isFinal: Boolean,
+        isAbstract: Boolean,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
         returnType: JavaReturnType?
@@ -86,11 +86,11 @@ class JavaGeneratedClass(
                 addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
             }
 
-            if (abstract) addModifiers(Modifier.ABSTRACT)
-            else if (static) addModifiers(Modifier.STATIC)
+            if (isAbstract) addModifiers(Modifier.ABSTRACT)
+            else if (isStatic) addModifiers(Modifier.STATIC)
             else if (isInterface) addModifiers(Modifier.DEFAULT)
 
-            if (final) addModifiers(Modifier.FINAL)
+            if (isFinal) addModifiers(Modifier.FINAL)
 
         }.build()
 
@@ -113,15 +113,15 @@ class JavaGeneratedClass(
         name: String,
         type: AnyJavaType,
         visibility: Visibility,
-        static: Boolean,
-        final: Boolean,
+        isStatic: Boolean,
+        isFinal: Boolean,
         initializer: Expression?
     ) {
         typeSpec.addField(FieldSpec.builder(type.toTypeName(), name)
             .apply {
                 visibility.toModifier()?.let { addModifiers(it) }
-                if (static) addModifiers(Modifier.STATIC)
-                if (final) addModifiers(Modifier.FINAL)
+                if (isStatic) addModifiers(Modifier.STATIC)
+                if (isFinal) addModifiers(Modifier.FINAL)
                 if (initializer != null) {
                     val (format, arguments) = JavaCodeWriter().write(initializer)
                     initializer(format, *arguments.toTypeNames())
