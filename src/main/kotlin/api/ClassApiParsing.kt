@@ -1,9 +1,8 @@
 package api
 
-import api.ClassApi.Variant.*
-import api.ClassApi.Variant.Annotation
-import api.ClassApi.Variant.Enum
 import asm.*
+import codegeneration.ClassAccess
+import codegeneration.MethodAccess
 import descriptor.*
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
@@ -91,18 +90,20 @@ private fun readSingularClass(
                 )
             },
         outerClass = outerClass,
-        classVariant = with(classNode) {
-            when {
-                isInterface -> Interface
-                isAnnotation -> Annotation
-                isEnum -> Enum
-                isAbstract -> AbstractClass
-                else -> ConcreteClass
-            }
-        },
         visibility = classNode.visibility,
-        isStatic = isStatic,
-        isFinal = classNode.isfinal,
+        access = ClassAccess(
+            variant = with(classNode) {
+                when {
+                    isInterface -> ClassVariant.Interface
+                    isAnnotation -> ClassVariant.Annotation
+                    isEnum -> ClassVariant.Enum
+                    isAbstract -> ClassVariant.AbstractClass
+                    else -> ClassVariant.ConcreteClass
+                }
+            },
+            isStatic = isStatic,
+            isFinal = classNode.isfinal
+        ),
         typeArguments = signature.typeArguments ?: listOf(),
         annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations)
     )
@@ -183,10 +184,10 @@ private fun readMethod(
                 )
             }.toMap(),
         throws = signature.throwsSignatures.map { it.noAnnotations() },
-        isStatic = method.isStatic,
         visibility = visibility,
-        isFinal = method.isFinal,
-        isAbstract = method.isAbstract
+        access = MethodAccess(isStatic = method.isStatic,
+            isFinal = method.isFinal,
+            isAbstract = method.isAbstract)
     )
 }
 

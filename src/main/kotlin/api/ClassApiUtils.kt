@@ -8,8 +8,14 @@ import signature.*
 import util.QualifiedName
 import util.ShortClassName
 
-val ClassApi.isInterface get() = classVariant == ClassApi.Variant.Interface
-val ClassApi.isAbstract get() = classVariant == ClassApi.Variant.AbstractClass
+val ClassApi.isFinal get() = access.isFinal
+val ClassApi.isStatic get() = access.isStatic
+val ClassApi.variant get() = access.variant
+val ClassApi.Method.isFinal get() = access.isFinal
+val ClassApi.Method.isAbstract get() = access.isAbstract
+
+val ClassApi.isInterface get() = variant == ClassVariant.Interface
+val ClassApi.isAbstract get() = variant == ClassVariant.AbstractClass
 val ClassApi.isInnerClass get() = outerClass != null
 val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
 val Visible.isPublic get() = visibility == Visibility.Public

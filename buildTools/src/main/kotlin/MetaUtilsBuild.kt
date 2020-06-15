@@ -1,8 +1,5 @@
 import abstractor.VersionPackage
-import api.ClassApi
-import api.listInnerClassChain
-import api.readFromList
-import api.visitClasses
+import api.*
 import asm.readToClassNode
 import asm.writeTo
 import org.gradle.api.Plugin

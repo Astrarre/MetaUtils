@@ -1,13 +1,11 @@
 package api
 
+import codegeneration.ClassAccess
 import codegeneration.ClassVisibility
-import codegeneration.Public
+import codegeneration.MethodAccess
 import codegeneration.Visibility
-import descriptor.MethodDescriptor
-import descriptor.ObjectType
 import signature.*
 import util.QualifiedName
-import util.ShortClassName
 import util.includeIf
 
 interface Visible {
@@ -15,15 +13,22 @@ interface Visible {
 }
 
 
+
+enum class ClassVariant {
+    Interface,
+    ConcreteClass,
+    AbstractClass,
+    Enum,
+    Annotation
+}
+
 /**
  * [ClassApi]es use dot.separated.format for the packageName always!
  */
 class ClassApi(
     val annotations : List<JavaAnnotation>,
     override val visibility: ClassVisibility,
-    val isStatic: Boolean,
-    val isFinal: Boolean,
-    val classVariant: Variant,
+    val access: ClassAccess,
     val name: QualifiedName,
     val typeArguments: List<TypeArgumentDeclaration>,
     val superClass: JavaClassType?,
@@ -40,13 +45,7 @@ class ClassApi(
 
     companion object;
 
-    enum class Variant {
-        Interface,
-        ConcreteClass,
-        AbstractClass,
-        Enum,
-        Annotation
-    }
+
 
     abstract class Member : Visible {
         abstract val name: String
@@ -63,13 +62,12 @@ class ClassApi(
         val typeArguments: List<TypeArgumentDeclaration>,
         val throws : List<JavaThrowableType>,
         override val visibility: Visibility,
-        override val isStatic: Boolean,
-        val isFinal: Boolean,
-        val isAbstract: Boolean
+        val access: MethodAccess
     ) : Member() {
         override fun toString() = "static ".includeIf(isStatic) +
                 "$name(${parameters.map { (name, type) -> "$name: $type" }}): $returnType"
 
+        override val isStatic = access.isStatic
     }
 
     data class Field(

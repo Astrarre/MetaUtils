@@ -40,7 +40,7 @@ internal open class JavaCodeWriter : CodeWriter() {
         is Statement.Assignment -> write(code.target).mapString { "$it = " } + write(code.assignedValue)
         is Expression.ArrayConstructor -> write(code.size).mapString { "new $TYPE_FORMAT[$it]" }
             .prependArg(code.componentClass)
-        is Statement.ConstructorCall.This -> code.parameters.toParameterList().mapString { "this$it" }
+//        is Statement.ConstructorCall.This -> code.parameters.toParameterList().mapString { "this$it" }
         is Statement.ConstructorCall.Super -> code.parameters.toParameterList().mapString { "super$it" }
     }
 
