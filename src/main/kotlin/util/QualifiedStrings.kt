@@ -7,7 +7,6 @@ data class QualifiedName(
     // Dot or slash qualified
     val packageName: PackageName?, val shortName: ShortClassName
 ) {
-//    fun toQualifiedString() = (packageName ?: QualifiedString.Empty) + shortName.toDollarQualified()
 
     private fun toQualified(packageSeparator: String, classSeparator: String): String =
         if (packageName == null) shortName.toDollarQualifiedString() else
@@ -34,11 +33,6 @@ data class QualifiedName(
         packageName?.startsWith(*startingComponents) == true
 }
 
-//fun QualifiedString.toFullyQualifiedName(): FullyQualifiedName =
-//    if(components.size == 1) FullyQualifiedName(packageName = null, className = components[0])
-//    else FullyQualifiedName(packageName = QualifiedString(components.dropLast(1)), className = components.last())
-
-//fun String.toDotQualified() = replace('/', '.')
 
 fun String.toPackageName(dotQualified: Boolean): PackageName {
     val separator = if (dotQualified) '.' else '/'
@@ -63,8 +57,6 @@ fun String.toQualifiedName(dotQualified: Boolean, dollarQualified: Boolean = tru
 
 fun String.prependToQualified(qualifiedString: PackageName) =
     PackageName(this.prependTo(qualifiedString.components))
-// fun String?.util.prependIfNotNull(qualifiedString: QualifiedString) = if(this == null) qualifiedString else
-//     QualifiedString(this.util.prependTo(qualifiedString.components))
 
 sealed class AbstractQualifiedString {
     abstract val components: List<String>
@@ -96,16 +88,10 @@ data class PackageName(override val components: List<String>) : AbstractQualifie
     fun toDotQualified() = toQualified(".")
     fun toSlashQualified() = toQualified("/")
     override fun toString(): String = toSlashQualified()
-
-
-//    fun splitPackageClass(): util.QualifiedName {
-//        require(components.isNotEmpty())
-//        return if (components.size == 1) util.QualifiedName(packageName = null, shortName = components[0])
-//        else util.QualifiedName(packageName = util.PackageName(components.dropLast(1)), shortName = components.last())
-//    }
 }
 
 data class ShortClassName(override val components: List<String>) : AbstractQualifiedString() {
+    override fun toString(): String = toDollarQualifiedString()
     init {
         require(components.isNotEmpty())
     }

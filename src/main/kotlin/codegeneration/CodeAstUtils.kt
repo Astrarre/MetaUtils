@@ -1,6 +1,8 @@
 package codegeneration
 
 import api.AnyJavaType
+import api.ClassApi
+import api.variant
 import descriptor.JavaLangObjectJvmType
 import signature.JavaLangObjectJavaType
 import javax.lang.model.element.Modifier
@@ -21,3 +23,6 @@ fun Visibility.toModifier(): Modifier? = when (this) {
     Visibility.Protected -> Modifier.PROTECTED
     ClassVisibility.Package -> null
 }
+
+val ClassVariant.isInterface get() = this == ClassVariant.Interface
+val ClassVariant.isAbstract get() = this == ClassVariant.AbstractClass

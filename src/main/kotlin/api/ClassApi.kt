@@ -14,13 +14,7 @@ interface Visible {
 
 
 
-enum class ClassVariant {
-    Interface,
-    ConcreteClass,
-    AbstractClass,
-    Enum,
-    Annotation
-}
+
 
 /**
  * [ClassApi]es use dot.separated.format for the packageName always!
@@ -29,6 +23,7 @@ class ClassApi(
     val annotations : List<JavaAnnotation>,
     override val visibility: ClassVisibility,
     val access: ClassAccess,
+    val isStatic: Boolean,
     val name: QualifiedName,
     val typeArguments: List<TypeArgumentDeclaration>,
     val superClass: JavaClassType?,

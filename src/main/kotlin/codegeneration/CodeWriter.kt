@@ -3,6 +3,7 @@ package codegeneration
 import api.*
 import com.squareup.javapoet.*
 import descriptor.JvmPrimitiveType
+import descriptor.JvmType
 import descriptor.ObjectType
 import signature.*
 import util.prependIfNotNull
@@ -44,8 +45,8 @@ internal open class JavaCodeWriter : CodeWriter() {
         is Statement.ConstructorCall.Super -> code.parameters.toParameterList().mapString { "super$it" }
     }
 
-    private fun List<Expression>.toParameterList(): FormattedString {
-        val parametersCode = map { write(it) }
+    private fun List<Pair<JvmType, Expression>>.toParameterList(): FormattedString {
+        val parametersCode = map { write(it.second) }
         val totalArgs = parametersCode.flatMap { it.formatArguments }
         return ("(" + parametersCode.joinToString(", ") { it.string } + ")").format(totalArgs)
     }

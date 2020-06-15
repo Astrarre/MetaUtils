@@ -2,6 +2,7 @@ package api
 
 import asm.*
 import codegeneration.ClassAccess
+import codegeneration.ClassVariant
 import codegeneration.MethodAccess
 import descriptor.*
 import org.objectweb.asm.tree.AnnotationNode
@@ -101,9 +102,9 @@ private fun readSingularClass(
                     else -> ClassVariant.ConcreteClass
                 }
             },
-            isStatic = isStatic,
-            isFinal = classNode.isfinal
+            isFinal = classNode.isFinal
         ),
+        isStatic = isStatic,
         typeArguments = signature.typeArguments ?: listOf(),
         annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations)
     )

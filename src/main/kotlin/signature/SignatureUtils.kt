@@ -66,10 +66,12 @@ fun <T : GenericReturnType> T.noAnnotations(): JavaType<T> = JavaType(this, list
 
 fun GenericTypeOrPrimitive.toJvmType(): JvmType = when (this) {
     is GenericsPrimitiveType -> primitive
-    is ClassGenericType -> ObjectType(toJvmQualifiedName())
+    is ClassGenericType -> toJvmType()
     is TypeVariable -> JavaLangObjectJvmType
     is ArrayGenericType -> ArrayType(componentType.toJvmType())
 }
+
+fun ClassGenericType.toJvmType() : ObjectType = ObjectType(toJvmQualifiedName())
 
 fun GenericReturnType.toJvmType(): ReturnDescriptor = when (this) {
     is GenericTypeOrPrimitive -> toJvmType()
@@ -82,6 +84,8 @@ fun MethodSignature.toJvmDescriptor() = MethodDescriptor(
 )
 
 fun JavaType<*>.toJvmType() = type.toJvmType()
+fun AnyJavaType.toJvmType() = type.toJvmType()
+fun JavaClassType.toJvmType() = type.toJvmType()
 
 fun QualifiedName.toRawGenericType(): ClassGenericType = toClassGenericType(shortName.components.map { null })
 

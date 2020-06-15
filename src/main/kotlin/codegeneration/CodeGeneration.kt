@@ -14,8 +14,7 @@ class ClassInfo(
     /**
      * Interfaces are NOT considered abstract
      */
-    val isAbstract: Boolean,
-    val isInterface: Boolean,
+    val access: ClassAccess,
     val typeArguments: List<TypeArgumentDeclaration>,
     val superClass: JavaClassType?,
     val superInterfaces: List<JavaClassType>,
@@ -43,9 +42,7 @@ interface CodeGenerator {
 interface GeneratedClass {
     fun addMethod(
         methodInfo: MethodInfo,
-        isStatic: Boolean,
-        isFinal: Boolean,
-        isAbstract: Boolean,
+        access : MethodAccess,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
         returnType: JavaReturnType?
@@ -82,5 +79,5 @@ fun GeneratedClass.addMethod(
     body: GeneratedMethod.() -> Unit
 ): Unit = addMethod(
     MethodInfo(visibility, parameters, throws, body),
-    static, final, abstract, typeArguments, name, returnType
+    MethodAccess(static, final, abstract), typeArguments, name, returnType
 )

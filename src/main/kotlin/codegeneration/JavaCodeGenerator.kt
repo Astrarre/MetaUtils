@@ -32,16 +32,16 @@ object JavaCodeGenerator : CodeGenerator {
 }
 
 private fun generateClass(info: ClassInfo): TypeSpec.Builder = with(info) {
-    val builder = if (isInterface) TypeSpec.interfaceBuilder(shortName) else TypeSpec.classBuilder(shortName)
+    val builder = if (access.variant.isInterface) TypeSpec.interfaceBuilder(shortName) else TypeSpec.classBuilder(shortName)
     builder.apply {
         visibility.toModifier()?.let { addModifiers(it) }
-        if (isAbstract) addModifiers(Modifier.ABSTRACT)
+        if (access.variant.isAbstract) addModifiers(Modifier.ABSTRACT)
         if (superClass != null) superclass(superClass.toTypeName())
         for (superInterface in superInterfaces) addSuperinterface(superInterface.toTypeName())
         addTypeVariables(typeArguments.map { it.toTypeName() })
         addAnnotations(this@with.annotations.map { it.toAnnotationSpec() })
     }
-    JavaGeneratedClass(builder, isInterface).body()
+    JavaGeneratedClass(builder, access.variant.isInterface).body()
     return builder
 }
 
@@ -66,12 +66,9 @@ class JavaGeneratedClass(
     private val isInterface: Boolean
 ) : GeneratedClass {
 
-
     override fun addMethod(
         methodInfo: MethodInfo,
-        isStatic: Boolean,
-        isFinal: Boolean,
-        isAbstract: Boolean,
+        access: MethodAccess,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
         returnType: JavaReturnType?
@@ -86,16 +83,17 @@ class JavaGeneratedClass(
                 addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
             }
 
-            if (isAbstract) addModifiers(Modifier.ABSTRACT)
-            else if (isStatic) addModifiers(Modifier.STATIC)
+            if (access.isAbstract) addModifiers(Modifier.ABSTRACT)
+            else if (access.isStatic) addModifiers(Modifier.STATIC)
             else if (isInterface) addModifiers(Modifier.DEFAULT)
 
-            if (isFinal) addModifiers(Modifier.FINAL)
+            if (access.isFinal) addModifiers(Modifier.FINAL)
 
         }.build()
 
         typeSpec.addMethod(method)
     }
+
 
     override fun addConstructor(info: MethodInfo) {
         require(!isInterface) { "Interfaces don't have constructors" }

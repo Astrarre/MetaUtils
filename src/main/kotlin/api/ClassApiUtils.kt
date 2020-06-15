@@ -2,6 +2,8 @@ package api
 
 import codegeneration.Public
 import codegeneration.Visibility
+import codegeneration.isAbstract
+import codegeneration.isInterface
 import descriptor.MethodDescriptor
 import descriptor.ObjectType
 import signature.*
@@ -9,13 +11,12 @@ import util.QualifiedName
 import util.ShortClassName
 
 val ClassApi.isFinal get() = access.isFinal
-val ClassApi.isStatic get() = access.isStatic
 val ClassApi.variant get() = access.variant
 val ClassApi.Method.isFinal get() = access.isFinal
 val ClassApi.Method.isAbstract get() = access.isAbstract
 
-val ClassApi.isInterface get() = variant == ClassVariant.Interface
-val ClassApi.isAbstract get() = variant == ClassVariant.AbstractClass
+val ClassApi.isInterface get() = variant.isInterface
+val ClassApi.isAbstract get() = variant.isAbstract
 val ClassApi.isInnerClass get() = outerClass != null
 val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
 val Visible.isPublic get() = visibility == Visibility.Public

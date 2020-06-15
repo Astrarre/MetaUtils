@@ -77,7 +77,7 @@ val ClassNode.isInterface get() = opCode(Opcodes.ACC_INTERFACE)
 val ClassNode.isAbstract get() = opCode(Opcodes.ACC_ABSTRACT)
 val ClassNode.isEnum get() = opCode(Opcodes.ACC_ENUM)
 val ClassNode.isAnnotation get() = opCode(Opcodes.ACC_ANNOTATION)
-val ClassNode.isfinal get() = access.final
+val ClassNode.isFinal get() = access.final
 val ClassNode.visibility: ClassVisibility
     get() = with(access) {
         when {
