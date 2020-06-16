@@ -4,6 +4,7 @@ import api.*
 import com.squareup.javapoet.*
 import signature.TypeArgumentDeclaration
 import util.PackageName
+import util.ShortClassName
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 import kotlin.contracts.contract
@@ -34,7 +35,7 @@ interface CodeGenerator {
     fun writeClass(
         info: ClassInfo,
         packageName: PackageName?,
-        writeTo: Path
+        srcRoot: Path
     )
 }
 
@@ -45,7 +46,7 @@ interface GeneratedClass {
         access : MethodAccess,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
-        returnType: JavaReturnType?
+        returnType: JavaReturnType
     )
     fun addConstructor(info: MethodInfo)
     fun addInnerClass(info: ClassInfo, isStatic: Boolean)
@@ -75,7 +76,7 @@ fun GeneratedClass.addMethod(
     abstract: Boolean,
     typeArguments: List<TypeArgumentDeclaration>,
     name: String,
-    returnType: JavaReturnType?,
+    returnType: JavaReturnType,
     body: GeneratedMethod.() -> Unit
 ): Unit = addMethod(
     MethodInfo(visibility, parameters, throws, body),

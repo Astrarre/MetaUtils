@@ -33,6 +33,10 @@ data class QualifiedName(
         packageName?.startsWith(*startingComponents) == true
 }
 
+fun QualifiedName.innerClass(name: String) = copy(
+    shortName = shortName.copy(components = shortName.components + name)
+)
+
 
 fun String.toPackageName(dotQualified: Boolean): PackageName {
     val separator = if (dotQualified) '.' else '/'
@@ -77,6 +81,9 @@ fun PackageName?.toPath(): Path = if (this == null || components.isEmpty()) Path
     Paths.get(components[0], *components.drop(1).toTypedArray())
 }
 
+fun QualifiedName.toPath(suffix: String = ""): Path = packageName.toPath()
+    .resolve(shortName.toDollarQualifiedString() + suffix)
+
 data class PackageName(override val components: List<String>) : AbstractQualifiedString() {
     companion object {
         val Empty = PackageName(listOf())
@@ -92,6 +99,7 @@ data class PackageName(override val components: List<String>) : AbstractQualifie
 
 data class ShortClassName(override val components: List<String>) : AbstractQualifiedString() {
     override fun toString(): String = toDollarQualifiedString()
+
     init {
         require(components.isNotEmpty())
     }

@@ -3,8 +3,11 @@ package signature
 import util.includeIf
 
 fun ClassSignature.toClassfileName() = typeArguments.toDeclClassfileName() +
-        superClass.toClassfileName() + superInterfaces.joinToString("") { it.toClassfileName() }
+        superClass.toClassfileName() + superInterfaces.toClassfileName()
 
+fun MethodSignature.toClassfileName(): String =
+    typeArguments.toDeclClassfileName() + "(" + parameterTypes.toClassfileName() + ")" +
+            returnType.toClassfileName() + throwsSignatures.joinToString("") { "^$it" }
 
 private fun TypeArgumentDeclaration.toClassfileName(): String = "$name:${classBound?.toClassfileName().orEmpty()}" +
         interfaceBounds.joinToString("") { ":${it.toClassfileName()}" }
@@ -21,7 +24,8 @@ fun GenericReturnType.toClassfileName(): String = when (this) {
     GenericReturnType.Void -> "V"
 }
 
-private fun SimpleClassGenericType.toClassfileName() = name + typeArguments.toClassfileName()
+
+private fun SimpleClassGenericType.toClassfileName() = name + typeArguments.toArgClassfileName()
 
 
 private fun TypeArgument.toClassfileName() = when (this) {
@@ -34,5 +38,7 @@ private fun WildcardType.toClassfileName() = when (this) {
     WildcardType.Super -> "-"
 }
 
-private fun List<TypeArgument>?.toClassfileName() = if (this == null) ""
+private fun List<GenericReturnType>.toClassfileName() = joinToString("") { it.toClassfileName() }
+
+private fun List<TypeArgument>?.toArgClassfileName() = if (this == null) ""
 else "<" + joinToString("") { it.toClassfileName() } + ">"

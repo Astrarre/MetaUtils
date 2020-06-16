@@ -18,6 +18,7 @@ fun Path.createJar(contents: (JarOutputStream) -> Unit = {}) =
 fun Path.isDirectory() = Files.isDirectory(this)
 fun Path.createDirectory(): Path = Files.createDirectory(this)
 fun Path.createDirectories(): Path = Files.createDirectories(this)
+fun Path.createParentDirectories(): Path = parent.createDirectories()
 fun Path.inputStream(): InputStream = Files.newInputStream(this)
 fun Path.writeBytes(bytes: ByteArray): Path = Files.write(this, bytes)
 inline fun openJars(jar1: Path, jar2: Path, jar3: Path, usage: (FileSystem, FileSystem, FileSystem) -> Unit) =

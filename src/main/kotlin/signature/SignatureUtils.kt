@@ -9,8 +9,8 @@ import descriptor.*
 import util.QualifiedName
 import util.ShortClassName
 import util.toQualifiedName
-
-val JavaLangObjectJavaType = AnyJavaType(JavaLangObjectJvmType.toRawGenericType(), annotations = listOf())
+val JavaLangObjectGenericType = JavaLangObjectJvmType.toRawGenericType()
+val JavaLangObjectJavaType = AnyJavaType(JavaLangObjectGenericType, annotations = listOf())
 
 
 fun <T : GenericReturnType> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {

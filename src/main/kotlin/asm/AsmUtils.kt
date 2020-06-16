@@ -1,11 +1,11 @@
 package asm
 
 import codegeneration.*
-import util.inputStream
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
+import util.inputStream
 import util.writeBytes
 import java.nio.file.Path
 
@@ -38,6 +38,38 @@ private infix fun Int.opCode(code: Int): Boolean = (this and code) != 0
 infix fun MethodNode.opCode(code: Int) = access opCode code
 infix fun FieldNode.opCode(code: Int) = access opCode code
 infix fun ClassNode.opCode(code: Int) = access opCode code
+
+private val opcodes = mapOf(
+    "public" to Opcodes.ACC_PUBLIC,
+    "private" to Opcodes.ACC_PRIVATE,
+    "protected" to Opcodes.ACC_PROTECTED,
+    "static" to Opcodes.ACC_STATIC,
+    "final" to Opcodes.ACC_FINAL,
+    "super" to Opcodes.ACC_SUPER,
+    "synchronized" to Opcodes.ACC_SYNCHRONIZED,
+    "open" to Opcodes.ACC_OPEN,
+    "transitive" to Opcodes.ACC_TRANSITIVE,
+    "volatile" to Opcodes.ACC_VOLATILE,
+    "bridge" to Opcodes.ACC_BRIDGE,
+    "static_phase" to Opcodes.ACC_STATIC_PHASE,
+    "varargs" to Opcodes.ACC_VARARGS,
+    "transient" to Opcodes.ACC_TRANSIENT,
+    "native" to Opcodes.ACC_NATIVE,
+    "interface" to Opcodes.ACC_INTERFACE,
+    "abstract" to Opcodes.ACC_ABSTRACT,
+    "strict" to Opcodes.ACC_STRICT,
+    "synthetic" to Opcodes.ACC_SYNTHETIC,
+    "annotation" to Opcodes.ACC_ANNOTATION,
+    "enum" to Opcodes.ACC_ENUM,
+    "mandated" to Opcodes.ACC_MANDATED,
+    "module" to Opcodes.ACC_MODULE
+)
+
+fun asmAccessOpcodeAsString(access: Int): String = buildString {
+    for ((name, opcode) in opcodes) {
+        if (access.opCode(opcode)) append("$name ")
+    }
+}
 
 
 private val Int.static get() = opCode(Opcodes.ACC_STATIC)

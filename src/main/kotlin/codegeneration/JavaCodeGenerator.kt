@@ -1,7 +1,9 @@
 package codegeneration
 
 
-import api.*
+import api.AnyJavaType
+import api.JavaReturnType
+import api.JavaType
 import com.squareup.javapoet.*
 import signature.TypeArgumentDeclaration
 import util.PackageName
@@ -12,27 +14,27 @@ import javax.lang.model.element.Modifier
 annotation class CodeGeneratorDsl
 
 
-
 @CodeGeneratorDsl
 object JavaCodeGenerator : CodeGenerator {
 
     override fun writeClass(
         info: ClassInfo,
         packageName: PackageName?,
-        writeTo: Path
+        srcRoot: Path
     ) {
         val generatedClass = generateClass(info)
         JavaFile.builder(
             packageName?.toDotQualified() ?: "",
             generatedClass.build()
-        ).skipJavaLangImports(true).build().writeTo(writeTo)
+        ).skipJavaLangImports(true).build().writeTo(srcRoot)
     }
 
 
 }
 
 private fun generateClass(info: ClassInfo): TypeSpec.Builder = with(info) {
-    val builder = if (access.variant.isInterface) TypeSpec.interfaceBuilder(shortName) else TypeSpec.classBuilder(shortName)
+    val builder =
+        if (access.variant.isInterface) TypeSpec.interfaceBuilder(shortName) else TypeSpec.classBuilder(shortName)
     builder.apply {
         visibility.toModifier()?.let { addModifiers(it) }
         if (access.variant.isAbstract) addModifiers(Modifier.ABSTRACT)
@@ -71,17 +73,16 @@ class JavaGeneratedClass(
         access: MethodAccess,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
-        returnType: JavaReturnType?
+        returnType: JavaReturnType
     ) {
         val method = generateMethod(methodInfo, name).apply {
             addTypeVariables(typeArguments.map { it.toTypeName() })
-            if (returnType != null) {
-                //TODO: the fact the annotations are attached to the return type is a bit wrong,
-                // but in java if you put the same annotation on the method and return type
-                // it counts as duplicating the annotation...
-                returns(returnType.toTypeName())
-                addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
-            }
+            //TODO: the fact the annotations are attached to the return type is a bit wrong,
+            // but in java if you put the same annotation on the method and return type
+            // it counts as duplicating the annotation...
+            returns(returnType.toTypeName())
+            addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
+
 
             if (access.isAbstract) addModifiers(Modifier.ABSTRACT)
             else if (access.isStatic) addModifiers(Modifier.STATIC)

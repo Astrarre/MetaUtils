@@ -59,7 +59,6 @@ private fun readSingularClass(
     val fields = classNode.fields.map { readField(it) }
 
     val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
-    val innerClassShortName = with(fullClassName.shortName.components) { if (size == 1) null else last() }
 
     val signature = if (classNode.signature != null) ClassSignature.readFrom(classNode.signature)
     else ClassSignature(
@@ -70,26 +69,26 @@ private fun readSingularClass(
         typeArguments = listOf()
     )
 
+    val innerClasses = classNode.innerClasses.map { it.name to it }.toMap()
+
     // Unfortunate hack to get the outer class reference into the inner classes
     var classApi: ClassApi? = null
     classApi = ClassApi(
         name = fullClassName,
-        //TODO: annotations
         superClass = if (classNode.superName == JavaLangObjectString) null else {
             JavaClassType(signature.superClass, annotations = listOf())
         },
         superInterfaces = signature.superInterfaces.map { JavaClassType(it, annotations = listOf()) },
         methods = methods.toSet(), fields = fields.toSet(),
-        innerClasses = classNode.innerClasses
-            .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
-            .map {
+        innerClasses = classNode.nestMembers
+            ?.map {
                 readSingularClass(
                     rootPath,
-                    rootPath.resolve(it.name + ".class"),
+                    rootPath.resolve("$it.class"),
                     lazy { classApi!! },
-                    isStatic = it.isStatic
+                    isStatic = innerClasses.getValue(it).isStatic
                 )
-            },
+            } ?: listOf(),
         outerClass = outerClass,
         visibility = classNode.visibility,
         access = ClassAccess(
