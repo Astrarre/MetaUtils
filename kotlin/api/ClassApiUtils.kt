@@ -49,12 +49,12 @@ fun ClassApi.asRawType() = asJvmType().toRawJavaType()
 fun ClassApi.asJvmType() = ObjectType(name)
 
 
-fun ClassApi.innerMostClassNameAsType() = ObjectType(
-    QualifiedName(
-        packageName = null,
-        shortName = ShortClassName(listOf(name.shortName.innermostClass()))
-    )
-).toRawJavaType()
+//fun ClassApi.innerMostClassNameAsType() = ObjectType(
+//    QualifiedName(
+//        packageName = null,
+//        shortName = ShortClassName(listOf(name.shortName.innermostClass()))
+//    )
+//).toRawJavaType()
 
 fun ClassApi.visitClasses(visitor: (ClassApi) -> Unit) {
     visitor(this)

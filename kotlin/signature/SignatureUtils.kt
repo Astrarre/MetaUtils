@@ -91,6 +91,10 @@ fun JavaType<*>.toJvmType() = type.toJvmType()
 fun AnyJavaType.toJvmType() = type.toJvmType()
 fun JavaClassType.toJvmType() = type.toJvmType()
 
+
+fun ClassGenericType.outerClass(): ClassGenericType = copy(classNameSegments =  classNameSegments.dropLast(1))
+fun JavaClassType.outerClass(): JavaClassType = copy(type = type.outerClass())
+
 fun QualifiedName.toRawGenericType(): ClassGenericType = toClassGenericType(shortName.components.map { null })
 
 /**

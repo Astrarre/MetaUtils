@@ -14,7 +14,7 @@ fun FieldSignature.toClassfileName() : String = when(this){
     is ClassGenericType -> "L" + packageName?.toSlashQualified().orEmpty() + "/".includeIf(packageName != null) +
             classNameSegments.joinToString("$") { it.toClassfileName() } + ";"
     is TypeVariable -> "T$name;"
-    is ArrayGenericType -> ";"
+    is ArrayGenericType -> "[" + componentType.toClassfileName()
     is GenericsPrimitiveType -> primitive.classFileName
 }
 

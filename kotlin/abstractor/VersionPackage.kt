@@ -13,7 +13,7 @@ import util.*
 class VersionPackage(private val versionPackage: String) {
     private fun PackageName?.toApiPackageName() = versionPackage.prependToQualified(this ?: PackageName.Empty)
     private fun ShortClassName.toApiShortClassName() =
-        ShortClassName(("I" + outerClass()).prependTo(innerClasses()))
+        ShortClassName(("I" + outerMostClass()).prependTo(innerClasses()))
 
     fun String.remapToApiClass(dotQualified : Boolean = false, dollarQualified : Boolean = true) =
         toQualifiedName(dotQualified, dollarQualified).toApiClass().toString(dotQualified, dollarQualified)
@@ -26,7 +26,7 @@ class VersionPackage(private val versionPackage: String) {
     } else this
 
     private fun ShortClassName.toBaseShortClassName() =
-        ShortClassName(("Base" + outerClass()).prependTo(innerClasses()))
+        ShortClassName(("Base" + outerMostClass()).prependTo(innerClasses()))
 
     fun QualifiedName.toBaseClass(): QualifiedName = if (isMcClassName()) {
         QualifiedName(

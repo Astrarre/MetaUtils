@@ -69,7 +69,9 @@ private fun readSingularClass(
         typeArguments = listOf()
     )
 
-    val innerClasses = classNode.innerClasses.map { it.name to it }.toMap()
+//    val innerClasses = classNode.innerClasses.map { it.name to it }.toMap()
+    val innerClassShortName = with(fullClassName.shortName.components) { if (size == 1) null else last() }
+
 
     // Unfortunate hack to get the outer class reference into the inner classes
     var classApi: ClassApi? = null
@@ -80,15 +82,16 @@ private fun readSingularClass(
         },
         superInterfaces = signature.superInterfaces.map { JavaClassType(it, annotations = listOf()) },
         methods = methods.toSet(), fields = fields.toSet(),
-        innerClasses = classNode.nestMembers
-            ?.map {
+        innerClasses = classNode.innerClasses
+            .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
+            .map {
                 readSingularClass(
                     rootPath,
-                    rootPath.resolve("$it.class"),
+                    rootPath.resolve("${it.name}.class"),
                     lazy { classApi!! },
-                    isStatic = innerClasses.getValue(it).isStatic
+                    isStatic = it.isStatic
                 )
-            } ?: listOf(),
+            },
         outerClass = outerClass,
         visibility = classNode.visibility,
         access = ClassAccess(
@@ -105,7 +108,8 @@ private fun readSingularClass(
         ),
         isStatic = isStatic,
         typeArguments = signature.typeArguments ?: listOf(),
-        annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations)
+        annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations),
+        asmInnerClasses = classNode.innerClasses
     )
 
     return classApi

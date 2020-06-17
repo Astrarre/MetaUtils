@@ -160,7 +160,7 @@ fun JavaAnnotation.toAnnotationSpec(): AnnotationSpec = AnnotationSpec.builder(t
 private fun ObjectType.toTypeName(): ClassName {
     val shortName = fullClassName.shortName
     return ClassName.get(
-        fullClassName.packageName?.toDotQualified() ?: "", shortName.outerClass(),
+        fullClassName.packageName?.toDotQualified() ?: "", shortName.outerMostClass(),
         *shortName.innerClasses().toTypedArray()
     )
 }

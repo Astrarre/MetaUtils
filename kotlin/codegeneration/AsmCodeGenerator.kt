@@ -5,6 +5,7 @@ import api.JavaReturnType
 import api.JavaType
 import descriptor.*
 import org.objectweb.asm.*
+import org.objectweb.asm.tree.InnerClassNode
 import signature.*
 import util.*
 import java.nio.file.Path
@@ -16,9 +17,10 @@ private fun Visibility.asmOpcode() = when (this) {
     Visibility.Protected -> Opcodes.ACC_PROTECTED
 }
 
-private fun ClassAccess.toAsmAccess(visibility: Visibility): Int {
+ fun ClassAccess.toAsmAccess(visibility: Visibility, isStatic: Boolean = false): Int {
     var access = 0
     if (isFinal) access = access or Opcodes.ACC_FINAL
+     if(isStatic) access = access or Opcodes.ACC_STATIC
     access = access or when (variant) {
         ClassVariant.Interface -> Opcodes.ACC_INTERFACE or Opcodes.ACC_ABSTRACT
         ClassVariant.ConcreteClass -> 0
@@ -52,7 +54,7 @@ private fun fieldAsmAccess(visibility: Visibility, isStatic: Boolean, isFinal: B
 private fun GenericTypeOrPrimitive.hasAnyTypeArguments() = getContainedClassesRecursively().size > 1
 
 private fun writeClassImpl(
-    info: ClassInfo, className: QualifiedName, srcRoot: Path
+    info: ClassInfo, className: QualifiedName, srcRoot: Path, outerClass: QualifiedName?
 ): Unit = with(info) {
     val classWriter = ClassWriter(0)
 
@@ -74,6 +76,8 @@ private fun writeClassImpl(
         superInterfaces.map { it.toJvmType().fullClassName.toSlashQualifiedString() }.toTypedArray()
     )
 
+//    if (outerClass != null) classWriter.visitNestHost(outerClass.toSlashQualifiedString())
+
     //TODO: investigate if we can trick the IDE to think the original source file is the mc source file
     classWriter.visitSource(null, null)
     AsmGeneratedClass(classWriter, className, srcRoot, info.access.variant.isInterface).apply(body).finish()
@@ -86,9 +90,15 @@ private fun writeClassImpl(
 
 }
 
+
 object AsmCodeGenerator : CodeGenerator {
     override fun writeClass(info: ClassInfo, packageName: PackageName?, srcRoot: Path) {
-        writeClassImpl(info, QualifiedName(packageName, ShortClassName(listOf(info.shortName))), srcRoot)
+        writeClassImpl(
+            info,
+            QualifiedName(packageName, ShortClassName(listOf(info.shortName))),
+            srcRoot,
+            outerClass = null
+        )
     }
 
 }
@@ -108,6 +118,10 @@ class AsmGeneratedClass(
     private val instanceFieldInitializers: MutableMap<FieldExpression, Expression> = mutableMapOf()
     private val staticFieldInitializers: MutableMap<FieldExpression, Expression> = mutableMapOf()
     private val constructors: MutableList<MethodInfo> = mutableListOf()
+
+    fun addAsmInnerClasses(innerClasses: List<InnerClassNode>) {
+        innerClasses.forEach { classWriter.visitInnerClass(it.name, it.outerName, it.innerName, it.access) }
+    }
 
     fun finish() {
         assert(instanceFieldInitializers.isEmpty() || constructors.isNotEmpty())
@@ -148,7 +162,9 @@ class AsmGeneratedClass(
     }
 
     override fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
-        writeClassImpl(info, className.innerClass(info.shortName), srcRoot)
+        val innerClassName = className.innerClass(info.shortName)
+        writeClassImpl(info, innerClassName, srcRoot, outerClass = className)
+//        classWriter.visitNestMember(innerClassName.toSlashQualifiedString())
     }
 
     override fun addMethod(
@@ -450,9 +466,10 @@ class AsmGeneratedMethod(
             invoke(
                 opcode = Opcodes.INVOKESPECIAL,
                 methodName = ConstructorsName,
-                // inner class is implicitly the first parameter in java, but explicitly the first parameter in bytecode
+                // outer class is implicitly the first parameter in java, but explicitly the first parameter in bytecode
                 parameterTypes = parameters.keys.applyIf(receiver != null) {
-                    constructing.toJvmType().prependTo(it)
+                    // Add outer class as first param to inner class
+                    constructing.outerClass().toJvmType().prependTo(it)
                 },
                 parametersToLoad = parameters.values.prependIfNotNull(receiver), // inner class
                 returnType = ReturnDescriptor.Void,
@@ -483,3 +500,24 @@ object AbstractGeneratedMethod : GeneratedMethod {
     }
 
 }
+
+//// We need to find all reference to classes to tell the jvm what inner classes we used
+//private inline fun ClassInfo.visitNames(crossinline visitor: (QualifiedName) -> Unit) {
+//    typeArguments.forEach { decl ->
+//        decl.classBound?.visitNames(visitor)
+//        decl.interfaceBounds.forEach { it.visitNames(visitor) }
+//    }
+//    superClass?.visitNames(visitor)
+//    superInterfaces.forEach { it.visitNames(visitor) }
+//    annotations.forEach { visitor(it.type.fullClassName) }
+//}
+//
+//
+//private inline fun JavaType<*>.visitNames(crossinline visitor: (QualifiedName) -> Unit){
+//    type.visitNames(visitor)
+//}
+//
+//private inline fun GenericReturnType.visitNames(crossinline visitor : (QualifiedName) -> Unit) = visitContainedClasses {
+//    visitor(it.toJvmQualifiedName())
+//}
+

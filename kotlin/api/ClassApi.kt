@@ -4,6 +4,7 @@ import codegeneration.ClassAccess
 import codegeneration.ClassVisibility
 import codegeneration.MethodAccess
 import codegeneration.Visibility
+import org.objectweb.asm.tree.InnerClassNode
 import signature.*
 import util.QualifiedName
 import util.includeIf
@@ -31,7 +32,8 @@ class ClassApi(
     val methods: Collection<Method>,
     val fields: Collection<Field>,
     val innerClasses: List<ClassApi>,
-    val outerClass: Lazy<ClassApi>?
+    val outerClass: Lazy<ClassApi>?,
+    val asmInnerClasses: List<InnerClassNode>
 ) : Visible {
 
     override fun toString(): String {
