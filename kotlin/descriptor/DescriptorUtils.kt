@@ -1,5 +1,6 @@
 package descriptor
 
+import signature.JavaLangObjectJavaType
 import util.QualifiedName
 import util.toQualifiedName
 
@@ -14,6 +15,8 @@ fun <T : Descriptor> T.remap(mapper: (className: QualifiedName) -> QualifiedName
 
 fun <T : Descriptor> Iterable<T>.remap(mapper: (className: QualifiedName) -> QualifiedName?) = map { it.remap(mapper) }
 
+fun ObjectType.toJvmString() = fullClassName.toSlashQualifiedString()
+fun ReturnDescriptor.toJvmString() = if(this is ObjectType) toJvmString() else classFileName
 
 
 const val JavaLangObjectString = "java/lang/Object"

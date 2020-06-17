@@ -2,6 +2,8 @@ package abstractor
 
 import api.JavaType
 import api.remap
+import descriptor.ReturnDescriptor
+import descriptor.remap
 import signature.ClassGenericType
 import signature.GenericReturnType
 import signature.TypeArgumentDeclaration
@@ -33,6 +35,7 @@ class VersionPackage(private val versionPackage: String) {
         )
     } else this
 
+    fun <T : ReturnDescriptor>T.remapToApiClass() : T = remap { it.toApiClass() }
     fun <T : GenericReturnType> JavaType<T>.remapToApiClass(): JavaType<T> = remap { it.toApiClass() }
     fun <T : GenericReturnType> T.remapToApiClass(): T = remap { it.toApiClass() }
     fun List<TypeArgumentDeclaration>.remapDeclToApiClasses() = map { typeArg ->

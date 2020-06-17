@@ -1,5 +1,6 @@
 package signature
 
+import descriptor.FieldDescriptor
 import util.includeIf
 
 fun ClassSignature.toClassfileName() = typeArguments.toDeclClassfileName() +
@@ -9,20 +10,28 @@ fun MethodSignature.toClassfileName(): String =
     typeArguments.toDeclClassfileName() + "(" + parameterTypes.toClassfileName() + ")" +
             returnType.toClassfileName() + throwsSignatures.joinToString("") { "^$it" }
 
+fun FieldSignature.toClassfileName() : String = when(this){
+    is ClassGenericType -> "L" + packageName?.toSlashQualified().orEmpty() + "/".includeIf(packageName != null) +
+            classNameSegments.joinToString("$") { it.toClassfileName() } + ";"
+    is TypeVariable -> "T$name;"
+    is ArrayGenericType -> ";"
+    is GenericsPrimitiveType -> primitive.classFileName
+}
+
+//fun FieldSignature.toClassfileName() = type
+
 private fun TypeArgumentDeclaration.toClassfileName(): String = "$name:${classBound?.toClassfileName().orEmpty()}" +
         interfaceBounds.joinToString("") { ":${it.toClassfileName()}" }
 
 private fun List<TypeArgumentDeclaration>?.toDeclClassfileName() = if (this == null) ""
 else "<" + joinToString("") { it.toClassfileName() } + ">"
 
-fun GenericReturnType.toClassfileName(): String = when (this) {
-    is ClassGenericType -> "L" + packageName?.toSlashQualified().orEmpty() + "/".includeIf(packageName != null) +
-            classNameSegments.joinToString("$") { it.toClassfileName() } + ";"
-    is TypeVariable -> "T$name;"
-    is ArrayGenericType -> ";" + componentType.toClassfileName()
-    is GenericsPrimitiveType -> primitive.classFileName
+private fun GenericReturnType.toClassfileName(): String = when (this) {
+    is FieldSignature -> toClassfileName()
     GenericReturnType.Void -> "V"
 }
+
+
 
 
 private fun SimpleClassGenericType.toClassfileName() = name + typeArguments.toArgClassfileName()

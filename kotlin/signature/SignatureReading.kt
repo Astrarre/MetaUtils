@@ -4,7 +4,7 @@ import util.PackageName
 
 fun ClassSignature.Companion.readFrom(signature: String): ClassSignature = SignatureReader(signature).readClass()
 fun MethodSignature.Companion.readFrom(signature: String): MethodSignature = SignatureReader(signature).readMethod()
-fun GenericType.Companion.readFrom(signature: String): FieldSignature = SignatureReader(signature).readField()
+fun GenericTypeOrPrimitive.Companion.readFrom(signature: String): FieldSignature = SignatureReader(signature).readField()
 
 private const val doChecks = true
 

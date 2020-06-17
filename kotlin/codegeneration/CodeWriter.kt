@@ -19,36 +19,38 @@ internal sealed class CodeWriter {
 
 //internal object KotlinCodeWriter : JavaCodeWriter() {
 //    override fun write(code: Code): FormattedString  = when(code){
-//        is Expression.Cast -> "".format
+//        is CastExpression -> "".format
 //        else -> super.write(code)
 //    }
 //}
 
 internal open class JavaCodeWriter : CodeWriter() {
+    private fun write(expression: Expression) = write(expression.code)
+    private fun write(rec: Receiver) = write(rec.code)
     override fun write(code: Code): FormattedString = when (code) {
-        is Expression.Variable -> code.name.format
-        is Expression.Cast -> write(code.target).mapString { "($TYPE_FORMAT)$it" }
+        is VariableExpression -> code.name.format
+        is CastExpression -> write(code.target).mapString { "($TYPE_FORMAT)$it" }
             .prependArg(code.castTo)
-        is Expression.Field -> write(code.owner as Code).mapString { "${it.withParentheses()}.${code.name}" }
-        Expression.This -> "this".format
-        is Expression.Call -> {
+        is FieldExpression -> write(code.receiver).mapString { "${it.withParentheses()}.${code.name}" }
+        ThisExpression -> "this".format
+        is MethodCall -> {
             val (prefixStr, prefixArgs) = code.prefix()
             code.parameters.toParameterList().mapString { "$prefixStr$it" }.prependArgs(prefixArgs)
         }
-        is Statement.Return -> write(code.target).mapString { "return $it" }
-        is ClassReceiver -> TYPE_FORMAT.format(code.type)
+        is ReturnStatement -> write(code.target).mapString { "return $it" }
+        is ClassReceiver -> TYPE_FORMAT.formatType(code.type.toRawJavaType())
         SuperReceiver -> "super".format
-        is Statement.Assignment -> write(code.target).mapString { "$it = " } + write(code.assignedValue)
-        is Expression.ArrayConstructor -> write(code.size).mapString { "new $TYPE_FORMAT[$it]" }
+        is AssignmentStatement -> write(code.target as Code).mapString { "$it = " } + write(code.assignedValue)
+        is ArrayConstructor -> write(code.size).mapString { "new $TYPE_FORMAT[$it]" }
             .prependArg(code.componentClass)
-//        is Statement.ConstructorCall.This -> code.parameters.toParameterList().mapString { "this$it" }
-        is Statement.ConstructorCall.Super -> code.parameters.toParameterList().mapString { "super$it" }
+//        is ConstructorCall.This -> code.parameters.toParameterList().mapString { "this$it" }
+        is ConstructorCall.Super -> code.parameters.toParameterList().mapString { "super$it" }
     }
 
     private fun List<Pair<JvmType, Expression>>.toParameterList(): FormattedString {
         val parametersCode = map { write(it.second) }
         val totalArgs = parametersCode.flatMap { it.formatArguments }
-        return ("(" + parametersCode.joinToString(", ") { it.string } + ")").format(totalArgs)
+        return ("(" + parametersCode.joinToString(", ") { it.string } + ")").formatType(totalArgs)
     }
 
     // Add parentheses to casts and constructor calls
@@ -56,11 +58,11 @@ internal open class JavaCodeWriter : CodeWriter() {
         if ((startsWith("(") || startsWith("new")) && !startsWith(")")) "($this)" else this
 //    private fun String.removeParentheses() = if (startsWith("(")) substring(1, length - 1) else this
 
-    private fun Expression.Call.prefix(): FormattedString = when (this) {
-        is Expression.Call.Method -> if (receiver == null) name.format else write(receiver as Code)
+    private fun MethodCall.prefix(): FormattedString = when (this) {
+        is MethodCall.Method -> if (receiver == null) name.format else write(receiver as Code)
             .mapString { "${it.withParentheses()}.$name" }
-        is Expression.Call.Constructor -> {
-            val rightSide = "new $TYPE_FORMAT".format(constructing)
+        is MethodCall.Constructor -> {
+            val rightSide = "new $TYPE_FORMAT".formatType(constructing)
             if (receiver == null) rightSide
             else write(receiver).mapString { "${it.withParentheses()}." } + rightSide
         }
@@ -176,8 +178,8 @@ internal data class FormattedString(val string: String, val formatArguments: Lis
 
 
 private val String.format get() = FormattedString(this, listOf())
-private fun String.format(args: List<JavaType<*>>) = FormattedString(this, args)
-private fun String.format(arg: JavaType<*>) = FormattedString(this, listOf(arg))
+private fun String.formatType(args: List<JavaType<*>>) = FormattedString(this, args)
+private fun String.formatType(arg: JavaType<*>) = FormattedString(this, listOf(arg))
 
 private const val TYPE_FORMAT = "\$T"
 

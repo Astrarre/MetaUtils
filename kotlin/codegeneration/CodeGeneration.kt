@@ -1,13 +1,9 @@
 package codegeneration
 
 import api.*
-import com.squareup.javapoet.*
 import signature.TypeArgumentDeclaration
 import util.PackageName
-import util.ShortClassName
 import java.nio.file.Path
-import javax.lang.model.element.Modifier
-import kotlin.contracts.contract
 
 class ClassInfo(
     val shortName: String,
@@ -43,11 +39,12 @@ interface CodeGenerator {
 interface GeneratedClass {
     fun addMethod(
         methodInfo: MethodInfo,
-        access : MethodAccess,
+        isStatic: Boolean, isFinal: Boolean, isAbstract: Boolean,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
         returnType: JavaReturnType
     )
+
     fun addConstructor(info: MethodInfo)
     fun addInnerClass(info: ClassInfo, isStatic: Boolean)
     fun addField(
@@ -80,5 +77,5 @@ fun GeneratedClass.addMethod(
     body: GeneratedMethod.() -> Unit
 ): Unit = addMethod(
     MethodInfo(visibility, parameters, throws, body),
-    MethodAccess(static, final, abstract), typeArguments, name, returnType
+    static, final, abstract, typeArguments, name, returnType
 )

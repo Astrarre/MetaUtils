@@ -3,54 +3,76 @@ package codegeneration
 import api.AnyJavaType
 import api.JavaClassType
 import descriptor.JvmType
-import descriptor.MethodDescriptor
 import descriptor.ObjectType
 import descriptor.ReturnDescriptor
+import descriptor.toJvmString
+import signature.toJvmType
 
 sealed class Code {
-    override fun toString(): String = JavaCodeWriter().write(this).string
+    override fun toString(): String {
+        val (string, format) = JavaCodeWriter().write(this)
+        var index = 0
+        return string.replace(Regex("\\\$T")) { format[index++].toString() }
+    }
 }
 
 
+// all implementors of Receiver, Statement and Expression MUST inherit Code
+val Receiver.code get() = this as Code
+val Statement.code get() = this as Code
 
-// all implementors of Receiver MUST inherit Code
 interface Receiver
 
-class ClassReceiver(val type: JavaClassType) : Code(), Receiver
-object SuperReceiver : Code(), Receiver
+class ClassReceiver(val type: ObjectType) : Receiver, Code()
+object SuperReceiver : Receiver, Code()
 
-sealed class Statement : Code() {
-    class Return(val target: Expression) : Statement()
-    class Assignment(val target: Expression, val assignedValue: Expression) : Statement()
-    sealed class ConstructorCall(val parameters: List<Pair<JvmType, Expression>>) : Statement() {
-        //        class This(parameters: List<Expression>, asmAccess: Int) : ConstructorCall(parameters, asmAccess)
-        class Super(parameters: List<Pair<JvmType, Expression>>) : ConstructorCall(parameters)
-    }
+interface Statement
+
+interface Assignable
+
+class ReturnStatement(val target: Expression) : Statement, Code()
+class AssignmentStatement(val target: Assignable, val assignedValue: Expression) : Statement, Code()
+sealed class ConstructorCall(val parameters: List<Pair<JvmType, Expression>>) : Statement, Code() {
+    //        class This(parameters: List<Expression>, asmAccess: Int) : ConstructorCall(parameters, asmAccess)
+    class Super(parameters: List<Pair<JvmType, Expression>>, val superType: ObjectType) : ConstructorCall(parameters)
 }
 
 
-sealed class Expression : Statement(), Receiver {
-    class Variable(val name: String) : Expression()
-    class Cast(val target: Expression, val castTo: AnyJavaType) : Expression()
-    class Field(val owner: Receiver, val name: String) : Expression()
-    sealed class Call(val parameters: List<Pair<JvmType, Expression>>) : Expression() {
-        class Method(
-            val receiver: Receiver?, val name: String, parameters: List<Pair<JvmType, Expression>>,
-            val methodAccess: MethodAccess, val receiverAccess: ClassAccess, val returnType: ReturnDescriptor, val owner: ObjectType
-        ) : Call(parameters)
+interface Expression : Receiver
 
-        class Constructor(
-            val receiver: Expression?,
-            val constructing: JavaClassType,
-            parameters: List<Pair<JvmType, Expression>>
-        ) : Call(parameters)
-    }
+class VariableExpression(val name: String) : Expression, Assignable, Code()
+class CastExpression(val target: Expression, val castTo: AnyJavaType) : Expression, Code()
+class FieldExpression(val receiver: Receiver, val name: String, val owner: ObjectType, val type: JvmType)
+    : Expression, Assignable, Code()
 
-    class ArrayConstructor(val componentClass: JavaClassType, val size: Expression) : Expression()
+sealed class MethodCall(val parameters: List<Pair<JvmType, Expression>>) : Expression,
+    Statement, Code() {
 
-    object This : Expression()
+    abstract val receiver: Receiver?
+    class Method(
+        override val receiver: Receiver?,
+        val name: String,
+        parameters: List<Pair<JvmType, Expression>>,
+        val methodAccess: MethodAccess,
+        val receiverAccess: ClassAccess,
+        val returnType: ReturnDescriptor,
+        val owner: ObjectType
+    ) : MethodCall(parameters)
+
+    class Constructor(
+        override val receiver: Expression?,
+        val constructing: JavaClassType,
+        parameters: List<Pair<JvmType, Expression>>
+    ) : MethodCall(parameters)
 }
 
+class ArrayConstructor(val componentClass: JavaClassType, val size: Expression) : Expression, Code()
+
+object ThisExpression : Expression, Code()
+
+//sealed class Assignable, Code{
+//    class Field : Assignable()
+//}
 
 
 enum class ClassVariant {
@@ -62,7 +84,12 @@ enum class ClassVariant {
 }
 
 data class ClassAccess(val isFinal: Boolean, val variant: ClassVariant)
-data class MethodAccess(val isStatic: Boolean, val isFinal: Boolean, val isAbstract: Boolean)
+data class MethodAccess(
+    val isStatic: Boolean,
+    val isFinal: Boolean,
+    val isAbstract: Boolean,
+    val visibility: Visibility
+)
 
 sealed class Visibility {
     companion object
@@ -85,3 +112,5 @@ sealed class ClassVisibility : Visibility() {
         override fun toString(): String = ""
     }
 }
+
+val Visibility.isPrivate get() = this == ClassVisibility.Private

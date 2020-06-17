@@ -30,7 +30,7 @@ data class MethodSignature(
             " throws ".includeIf(throwsSignatures.isNotEmpty()) + throwsSignatures.joinToString(", ")
 }
 
-typealias FieldSignature = GenericType
+typealias FieldSignature = GenericTypeOrPrimitive
 
 sealed class TypeArgument {
     data class SpecificType(val type: GenericType, val wildcardType: WildcardType?) : TypeArgument() {
@@ -57,7 +57,9 @@ sealed class GenericReturnType {
     }
 }
 
-sealed class GenericTypeOrPrimitive : GenericReturnType(), Signature
+sealed class GenericTypeOrPrimitive : GenericReturnType(), Signature{
+    companion object
+}
 
 internal val baseTypesGenericsMap = mapOf(
     JvmPrimitiveType.Byte.classFileName to GenericsPrimitiveType.Byte,
@@ -114,7 +116,7 @@ data class ClassGenericType(
     }
 
     companion object;
-    override fun toString(): String = "${packageName?.toSlashQualified()}/".includeIf(packageName != null) +
+    override fun toString(): String = /*"${packageName?.toSlashQualified()}/".includeIf(packageName != null) +*/
             classNameSegments.joinToString("$")
 }
 

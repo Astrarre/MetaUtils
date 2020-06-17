@@ -38,14 +38,15 @@ private fun ClassApi.addToInnerClassChain(accumulated: MutableList<ClassApi>) {
 }
 
 val ClassApi.Method.isVoid get() = returnType.type == GenericReturnType.Void
-fun ClassApi.asType() = name.toClassGenericType(
+fun ClassApi.asType(): JavaClassType = name.toClassGenericType(
     if (isStatic) {
         // Only put type arguments at the end
         (0 until outerClassCount()).map { null } + listOf(typeArguments.toTypeArgumentsOfNames())
     } else listInnerClassChain().map { it.typeArguments.toTypeArgumentsOfNames() }
 ).noAnnotations()
 
-fun ClassApi.asRawType() = ObjectType(name).toRawJavaType()
+fun ClassApi.asRawType() = asJvmType().toRawJavaType()
+fun ClassApi.asJvmType() = ObjectType(name)
 
 
 fun ClassApi.innerMostClassNameAsType() = ObjectType(

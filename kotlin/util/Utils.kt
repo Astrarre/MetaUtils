@@ -20,3 +20,6 @@ fun <T : Any?> T.prependTo(list: List<T>): List<T> {
     appendedList.addAll(list)
     return appendedList
 }
+
+val <K,V> List<Pair<K,V>>.keys get() = map { it.first }
+val <K,V> List<Pair<K,V>>.values get() = map { it.second }

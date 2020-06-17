@@ -1,22 +1,14 @@
-import java.util.ArrayList;
-import java.util.List;
+public class OverrideTest {
+    int field = 2;
+//    public static
 
-public class OverrideTest<T extends ArrayList<String>> {
-    public  List foo(List x) {return null;}
-
-//    static class Overriding extends OverrideTest<List<String>> {
-//        @Override
-//        public ArrayList foo(List x) {
-//            return null;
-//        }
-//    }
-
-    String getX;
-    String getX(int y){
-        return null;
+    public OverrideTest(int x) {
     }
 
-    String x(List<?> foo){
-        return null;
+    public OverrideTest(int x, int y) {
     }
+    OverrideTest() {
+    }
+
+
 }

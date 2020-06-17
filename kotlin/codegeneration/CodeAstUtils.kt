@@ -8,9 +8,9 @@ import signature.JavaLangObjectJavaType
 import javax.lang.model.element.Modifier
 
 
-private fun Expression.castTo(type: AnyJavaType): Expression.Cast = Expression.Cast(this, type)
-fun Expression.castExpressionTo(type: AnyJavaType, doubleCast: Boolean): Expression.Cast =
-    if (doubleCast) castTo(JavaLangObjectJavaType).castTo(type) else castTo(type)
+//fun Expression.castTo(type: AnyJavaType): CastExpression = CastExpression(this, type)
+//fun Expression.castExpressionTo(type: AnyJavaType, doubleCast: Boolean): CastExpression =
+//    if (doubleCast) castTo(JavaLangObjectJavaType).castTo(type) else castTo(type)
 
 val Visibility.Companion.Public get() = ClassVisibility.Public
 val Visibility.Companion.Private get() = ClassVisibility.Private
@@ -26,3 +26,4 @@ fun Visibility.toModifier(): Modifier? = when (this) {
 
 val ClassVariant.isInterface get() = this == ClassVariant.Interface
 val ClassVariant.isAbstract get() = this == ClassVariant.AbstractClass
+

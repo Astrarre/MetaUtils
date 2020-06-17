@@ -56,13 +56,13 @@ class ClassApi(
         val parameters: Map<String, AnyJavaType>,
         val typeArguments: List<TypeArgumentDeclaration>,
         val throws : List<JavaThrowableType>,
-        override val visibility: Visibility,
         val access: MethodAccess
     ) : Member() {
         override fun toString() = "static ".includeIf(isStatic) +
                 "$name(${parameters.map { (name, type) -> "$name: $type" }}): $returnType"
 
         override val isStatic = access.isStatic
+        override val visibility = access.visibility
     }
 
     data class Field(

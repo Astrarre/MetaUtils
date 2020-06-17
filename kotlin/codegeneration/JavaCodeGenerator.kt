@@ -70,7 +70,9 @@ class JavaGeneratedClass(
 
     override fun addMethod(
         methodInfo: MethodInfo,
-        access: MethodAccess,
+        isStatic: Boolean,
+        isFinal: Boolean,
+        isAbstract: Boolean,
         typeArguments: List<TypeArgumentDeclaration>,
         name: String,
         returnType: JavaReturnType
@@ -83,17 +85,20 @@ class JavaGeneratedClass(
             returns(returnType.toTypeName())
             addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
 
+            when {
+                isAbstract -> addModifiers(Modifier.ABSTRACT)
+                isStatic -> addModifiers(Modifier.STATIC)
+                isInterface -> addModifiers(Modifier.DEFAULT)
+            }
 
-            if (access.isAbstract) addModifiers(Modifier.ABSTRACT)
-            else if (access.isStatic) addModifiers(Modifier.STATIC)
-            else if (isInterface) addModifiers(Modifier.DEFAULT)
-
-            if (access.isFinal) addModifiers(Modifier.FINAL)
+            if (isFinal) addModifiers(Modifier.FINAL)
 
         }.build()
 
         typeSpec.addMethod(method)
     }
+
+
 
 
     override fun addConstructor(info: MethodInfo) {
@@ -122,7 +127,7 @@ class JavaGeneratedClass(
                 if (isStatic) addModifiers(Modifier.STATIC)
                 if (isFinal) addModifiers(Modifier.FINAL)
                 if (initializer != null) {
-                    val (format, arguments) = JavaCodeWriter().write(initializer)
+                    val (format, arguments) = JavaCodeWriter().write(initializer.code)
                     initializer(format, *arguments.toTypeNames())
                 }
                 addAnnotations(type.annotations.map { it.toAnnotationSpec() })
@@ -141,7 +146,7 @@ private fun List<JavaType<*>>.toTypeNames() = map { it.toTypeName() }.toTypedArr
 class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) : GeneratedMethod {
 
     override fun addStatement(statement: Statement) {
-        val (format, arguments) = JavaCodeWriter().write(statement)
+        val (format, arguments) = JavaCodeWriter().write(statement.code)
         methodSpec.addStatement(format, *arguments.toTypeNames())
     }
 

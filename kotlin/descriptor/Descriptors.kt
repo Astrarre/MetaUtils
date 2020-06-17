@@ -7,7 +7,6 @@ import util.toQualifiedName
 typealias FieldDescriptor = FieldType
 typealias JvmType = FieldType
 
-
 sealed class Descriptor(val classFileName: String) {
     override fun equals(other: Any?) = other is Descriptor && other.classFileName == classFileName
     override fun hashCode() = classFileName.hashCode()

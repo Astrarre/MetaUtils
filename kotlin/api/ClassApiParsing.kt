@@ -184,10 +184,11 @@ private fun readMethod(
                 )
             }.toMap(),
         throws = signature.throwsSignatures.map { it.noAnnotations() },
-        visibility = visibility,
         access = MethodAccess(isStatic = method.isStatic,
             isFinal = method.isFinal,
-            isAbstract = method.isAbstract)
+            isAbstract = method.isAbstract,
+            visibility = visibility
+        )
     )
 }
 

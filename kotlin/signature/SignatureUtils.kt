@@ -9,8 +9,10 @@ import descriptor.*
 import util.QualifiedName
 import util.ShortClassName
 import util.toQualifiedName
+
 val JavaLangObjectGenericType = JavaLangObjectJvmType.toRawGenericType()
 val JavaLangObjectJavaType = AnyJavaType(JavaLangObjectGenericType, annotations = listOf())
+val VoidJavaType = ReturnDescriptor.Void.toRawGenericType().noAnnotations()
 
 
 fun <T : GenericReturnType> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
@@ -62,6 +64,8 @@ fun ClassGenericType.toJvmQualifiedName() = QualifiedName(
     ShortClassName(classNameSegments.map { it.name })
 )
 
+fun ClassGenericType.toJvmString() = toJvmQualifiedName().toSlashQualifiedString()
+
 fun <T : GenericReturnType> T.noAnnotations(): JavaType<T> = JavaType(this, listOf())
 
 fun GenericTypeOrPrimitive.toJvmType(): JvmType = when (this) {
@@ -71,7 +75,7 @@ fun GenericTypeOrPrimitive.toJvmType(): JvmType = when (this) {
     is ArrayGenericType -> ArrayType(componentType.toJvmType())
 }
 
-fun ClassGenericType.toJvmType() : ObjectType = ObjectType(toJvmQualifiedName())
+fun ClassGenericType.toJvmType(): ObjectType = ObjectType(toJvmQualifiedName())
 
 fun GenericReturnType.toJvmType(): ReturnDescriptor = when (this) {
     is GenericTypeOrPrimitive -> toJvmType()
