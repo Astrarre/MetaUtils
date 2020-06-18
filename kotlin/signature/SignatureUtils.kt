@@ -3,6 +3,7 @@
 package signature
 
 import api.AnyJavaType
+import api.JavaAnnotation
 import api.JavaClassType
 import api.JavaType
 import descriptor.*
@@ -67,6 +68,7 @@ fun ClassGenericType.toJvmQualifiedName() = QualifiedName(
 fun ClassGenericType.toJvmString() = toJvmQualifiedName().toSlashQualifiedString()
 
 fun <T : GenericReturnType> T.noAnnotations(): JavaType<T> = JavaType(this, listOf())
+fun <T : GenericReturnType> T.annotated(annotation: JavaAnnotation): JavaType<T> = JavaType(this, listOf(annotation))
 
 fun GenericTypeOrPrimitive.toJvmType(): JvmType = when (this) {
     is GenericsPrimitiveType -> primitive

@@ -17,10 +17,10 @@ private fun Visibility.asmOpcode() = when (this) {
     Visibility.Protected -> Opcodes.ACC_PROTECTED
 }
 
- fun ClassAccess.toAsmAccess(visibility: Visibility, isStatic: Boolean = false): Int {
+fun ClassAccess.toAsmAccess(visibility: Visibility, isStatic: Boolean = false): Int {
     var access = 0
     if (isFinal) access = access or Opcodes.ACC_FINAL
-     if(isStatic) access = access or Opcodes.ACC_STATIC
+    if (isStatic) access = access or Opcodes.ACC_STATIC
     access = access or when (variant) {
         ClassVariant.Interface -> Opcodes.ACC_INTERFACE or Opcodes.ACC_ABSTRACT
         ClassVariant.ConcreteClass -> 0
@@ -76,7 +76,10 @@ private fun writeClassImpl(
         superInterfaces.map { it.toJvmType().fullClassName.toSlashQualifiedString() }.toTypedArray()
     )
 
-//    if (outerClass != null) classWriter.visitNestHost(outerClass.toSlashQualifiedString())
+    for (annotation in info.annotations) {
+        classWriter.visitAnnotation(annotation.type.classFileName, false).visitEnd()
+    }
+
 
     //TODO: investigate if we can trick the IDE to think the original source file is the mc source file
     classWriter.visitSource(null, null)
@@ -199,6 +202,17 @@ class AsmGeneratedClass(
             access.toAsmAccess(),
             name, descriptor.classFileName, signature?.toClassfileName(), null
         )
+
+        for (annotation in returnType.annotations) {
+            methodWriter.visitAnnotation(annotation.type.classFileName, false).visitEnd()
+        }
+
+        parameters.values.forEachIndexed { i, paramType ->
+            for (annotation in paramType.annotations) {
+                methodWriter.visitParameterAnnotation(i, annotation.type.classFileName, false).visitEnd()
+            }
+        }
+
         if (!access.isAbstract) methodWriter.visitCode()
         if (access.isAbstract) {
             AbstractGeneratedMethod.apply(bodyPrefix).apply(body)
@@ -238,6 +252,11 @@ class AsmGeneratedClass(
             fieldAsmAccess(visibility, isStatic, isFinal),
             name, type.toJvmType().classFileName, signature?.toClassfileName(), null
         )
+
+        for (annotation in type.annotations) {
+            fieldVisitor.visitAnnotation(annotation.type.classFileName, false).visitEnd()
+        }
+
         fieldVisitor.visitEnd()
         if (initializer != null) {
             val targetField = FieldExpression(

@@ -20,6 +20,7 @@ val ClassApi.isAbstract get() = variant.isAbstract
 val ClassApi.isInnerClass get() = outerClass != null
 val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
 val Visible.isPublic get() = visibility == Visibility.Public
+val Visible.isProtected get() = visibility == Visibility.Protected
 val ClassApi.Method.isConstructor get() = name == "<init>"
 fun ClassApi.Method.getJvmDescriptor() = MethodDescriptor(
     parameterDescriptors = parameters.map { (_, type) -> type.type.toJvmType() },

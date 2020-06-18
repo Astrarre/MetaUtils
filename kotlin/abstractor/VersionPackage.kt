@@ -37,6 +37,7 @@ class VersionPackage(private val versionPackage: String) {
 
     fun <T : ReturnDescriptor>T.remapToApiClass() : T = remap { it.toApiClass() }
     fun <T : GenericReturnType> JavaType<T>.remapToApiClass(): JavaType<T> = remap { it.toApiClass() }
+    fun <T : GenericReturnType> JavaType<T>.remapToBaseClass(): JavaType<T> = remap { it.toBaseClass() }
     fun <T : GenericReturnType> T.remapToApiClass(): T = remap { it.toApiClass() }
     fun List<TypeArgumentDeclaration>.remapDeclToApiClasses() = map { typeArg ->
         typeArg.copy(
