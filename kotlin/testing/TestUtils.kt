@@ -2,20 +2,19 @@ package testing
 
 import util.directChildren
 import util.exists
-import java.lang.reflect.Member
-import java.lang.reflect.Modifier
 import java.nio.file.Path
 import java.nio.file.Paths
 
 private class DummyClass
 
 fun getResource(path: String): Path = Paths.get(
-    DummyClass::class.java
-        .classLoader.getResource("dummyResource")!!.toURI()
-).parent.resolve(path)
-    .also { check(it.exists()) {
-            "Resource '$path' at $it does not exist. Other resources in resources directory ${it.parent}: " + it.parent.directChildren().toList()
-    } }
+    DummyClass::class.java.classLoader.getResource("dummyResource")!!.toURI()
+).parent.resolve(path).also {
+    check(it.exists()) {
+        "Resource '$path' at $it does not exist. Other resources in resources directory ${it.parent}: " + it.parent.directChildren()
+            .toList()
+    }
+}
 
 
 typealias Something = ArrayList<*>
