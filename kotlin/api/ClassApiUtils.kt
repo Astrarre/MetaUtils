@@ -61,3 +61,6 @@ fun ClassApi.visitClasses(visitor: (ClassApi) -> Unit) {
     visitor(this)
     innerClasses.forEach(visitor)
 }
+
+@OptIn(ExperimentalStdlibApi::class)
+fun ClassApi.allInnerClassesAndThis() = buildList { visitClasses { add(it) } }

@@ -5,8 +5,6 @@ import api.JavaClassType
 import descriptor.JvmType
 import descriptor.ObjectType
 import descriptor.ReturnDescriptor
-import descriptor.toJvmString
-import signature.toJvmType
 
 sealed class Code {
     override fun toString(): String {
@@ -42,13 +40,14 @@ interface Expression : Receiver
 
 class VariableExpression(val name: String) : Expression, Assignable, Code()
 class CastExpression(val target: Expression, val castTo: AnyJavaType) : Expression, Code()
-class FieldExpression(val receiver: Receiver, val name: String, val owner: ObjectType, val type: JvmType)
-    : Expression, Assignable, Code()
+class FieldExpression(val receiver: Receiver, val name: String, val owner: ObjectType, val type: JvmType) : Expression,
+    Assignable, Code()
 
 sealed class MethodCall(val parameters: List<Pair<JvmType, Expression>>) : Expression,
     Statement, Code() {
 
     abstract val receiver: Receiver?
+
     class Method(
         override val receiver: Receiver?,
         val name: String,
@@ -57,6 +56,7 @@ sealed class MethodCall(val parameters: List<Pair<JvmType, Expression>>) : Expre
         val receiverAccess: ClassAccess,
         val returnType: ReturnDescriptor,
         val owner: ObjectType
+//        , val dontDoVirtualDispatch: Boolean
     ) : MethodCall(parameters)
 
     class Constructor(

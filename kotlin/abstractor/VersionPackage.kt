@@ -15,8 +15,8 @@ class VersionPackage(private val versionPackage: String) {
     private fun ShortClassName.toApiShortClassName() =
         ShortClassName(("I" + outerMostClass()).prependTo(innerClasses()))
 
-    fun String.remapToApiClass(dotQualified : Boolean = false, dollarQualified : Boolean = true) =
-        toQualifiedName(dotQualified, dollarQualified).toApiClass().toString(dotQualified, dollarQualified)
+//    fun String.remapToApiClass(dotQualified : Boolean = false, dollarQualified : Boolean = true) =
+//        toQualifiedName(dotQualified, dollarQualified).toApiClass().toString(dotQualified, dollarQualified)
 
     fun QualifiedName.toApiClass(): QualifiedName = if (isMcClassName()) {
         QualifiedName(
@@ -28,12 +28,22 @@ class VersionPackage(private val versionPackage: String) {
     private fun ShortClassName.toBaseShortClassName() =
         ShortClassName(("Base" + outerMostClass()).prependTo(innerClasses()))
 
+//    private fun ShortClassName.toBaseApiShortClassName() =
+//        ShortClassName(("IBase" + outerMostClass()).prependTo(innerClasses()))
+
     fun QualifiedName.toBaseClass(): QualifiedName = if (isMcClassName()) {
         QualifiedName(
             packageName = packageName.toApiPackageName(),
             shortName = shortName.toBaseShortClassName()
         )
     } else this
+
+//    fun QualifiedName.toBaseApiInterface(): QualifiedName = if (isMcClassName()) {
+//        QualifiedName(
+//            packageName = packageName.toApiPackageName(),
+//            shortName = shortName.toBaseApiShortClassName()
+//        )
+//    } else this
 
     fun <T : ReturnDescriptor>T.remapToApiClass() : T = remap { it.toApiClass() }
     fun <T : GenericReturnType> JavaType<T>.remapToApiClass(): JavaType<T> = remap { it.toApiClass() }

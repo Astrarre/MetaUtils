@@ -37,6 +37,8 @@ fun QualifiedName.innerClass(name: String) = copy(
     shortName = shortName.copy(components = shortName.components + name)
 )
 
+fun QualifiedName.outerClass() = copy(shortName = shortName.outerClass())
+
 
 fun String.toPackageName(dotQualified: Boolean): PackageName {
     val separator = if (dotQualified) '.' else '/'
