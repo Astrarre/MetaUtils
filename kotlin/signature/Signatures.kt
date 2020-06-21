@@ -1,5 +1,6 @@
 package signature
 
+import arrow.optics.optics
 import util.PackageName
 import descriptor.JvmPrimitiveType
 import util.includeIf
@@ -17,6 +18,7 @@ data class ClassSignature(
             "(extends $superClass" + ", implements ".includeIf(superInterfaces.isNotEmpty()) +
             superInterfaces.joinToString(", ") + ")"
 }
+
 
 data class MethodSignature(
     val typeArguments: List<TypeArgumentDeclaration>?,
@@ -138,7 +140,8 @@ data class ArrayGenericType(val componentType: GenericTypeOrPrimitive) : Generic
 /**
  * i.e. T, U
  */
-data class TypeVariable(val name: String) : ThrowableType() {
+data class TypeVariable(val name: String, val declaration: TypeArgumentDeclaration) : ThrowableType() {
+    companion object;
     override fun toString(): String = name
 }
 

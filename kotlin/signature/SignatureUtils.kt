@@ -15,11 +15,13 @@ val JavaLangObjectGenericType = JavaLangObjectJvmType.toRawGenericType()
 val JavaLangObjectJavaType = AnyJavaType(JavaLangObjectGenericType, annotations = listOf())
 val VoidJavaType = ReturnDescriptor.Void.toRawGenericType().noAnnotations()
 
+fun TypeArgumentDeclaration.remap(mapper: (className: QualifiedName) -> QualifiedName?) : TypeArgumentDeclaration =
+    copy(classBound = classBound?.remap(mapper), interfaceBounds = interfaceBounds.map { it.remap(mapper) })
 
 fun <T : GenericReturnType> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
     is GenericsPrimitiveType -> this
     is ClassGenericType -> remap(mapper)
-    is TypeVariable -> this
+    is TypeVariable -> copy(declaration = declaration.remap(mapper))
     is ArrayGenericType -> copy(componentType.remap(mapper))
     GenericReturnType.Void -> GenericReturnType.Void
     else -> error("impossible")
@@ -73,8 +75,12 @@ fun <T : GenericReturnType> T.annotated(annotation: JavaAnnotation): JavaType<T>
 fun GenericTypeOrPrimitive.toJvmType(): JvmType = when (this) {
     is GenericsPrimitiveType -> primitive
     is ClassGenericType -> toJvmType()
-    is TypeVariable -> JavaLangObjectJvmType
+    is TypeVariable -> resolveJvmType()
     is ArrayGenericType -> ArrayType(componentType.toJvmType())
+}
+
+private fun TypeVariable.resolveJvmType(): JvmType = with(declaration) {
+    classBound?.toJvmType() ?: if (interfaceBounds.isNotEmpty()) interfaceBounds[0].toJvmType() else JavaLangObjectJvmType
 }
 
 fun ClassGenericType.toJvmType(): ObjectType = ObjectType(toJvmQualifiedName())
@@ -94,7 +100,7 @@ fun AnyJavaType.toJvmType() = type.toJvmType()
 fun JavaClassType.toJvmType() = type.toJvmType()
 
 
-fun ClassGenericType.outerClass(): ClassGenericType = copy(classNameSegments =  classNameSegments.dropLast(1))
+fun ClassGenericType.outerClass(): ClassGenericType = copy(classNameSegments = classNameSegments.dropLast(1))
 fun JavaClassType.outerClass(): JavaClassType = copy(type = type.outerClass())
 
 fun QualifiedName.toRawGenericType(): ClassGenericType = toClassGenericType(shortName.components.map { null })
@@ -155,5 +161,5 @@ private fun TypeArgument.remap(mapper: (className: QualifiedName) -> QualifiedNa
 }
 
 fun List<TypeArgumentDeclaration>.toTypeArgumentsOfNames(): List<TypeArgument>? = if (isEmpty()) null else map {
-    TypeArgument.SpecificType(TypeVariable(it.name), wildcardType = null)
+    TypeArgument.SpecificType(TypeVariable(it.name, it), wildcardType = null)
 }

@@ -54,11 +54,8 @@ private fun readSingularClass(
     isStatic: Boolean
 ): ClassApi {
 
-    val classNode = readToClassNode(path)
-    val methods = classNode.methods.map { readMethod(it, classNode) }
-    val fields = classNode.fields.map { readField(it) }
 
-    val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
+    val classNode = readToClassNode(path)
 
     val signature = if (classNode.signature != null) ClassSignature.readFrom(classNode.signature)
     else ClassSignature(
@@ -68,6 +65,15 @@ private fun readSingularClass(
         },
         typeArguments = listOf()
     )
+
+    val classTypeArgMap = signature.typeArguments?.map { it.name to it }?.toMap() ?: mapOf()
+
+    val methods = classNode.methods.map { readMethod(it, classNode, classTypeArgs = classTypeArgMap) }
+    val fields = classNode.fields.map { readField(it, classTypeArgs = classTypeArgMap) }
+
+    val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
+
+
 
 //    val innerClasses = classNode.innerClasses.map { it.name to it }.toMap()
     val innerClassShortName = with(fullClassName.shortName.components) { if (size == 1) null else last() }
@@ -125,8 +131,8 @@ private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<Ann
     return combined.map { JavaAnnotation(FieldType.read(it.desc) as ObjectType) }
 }
 
-private fun readField(field: FieldNode): ClassApi.Field {
-    val signature = if (field.signature != null) FieldSignature.readFrom(field.signature)
+private fun readField(field: FieldNode, classTypeArgs : TypeArgDecls): ClassApi.Field {
+    val signature = if (field.signature != null) FieldSignature.readFrom(field.signature, classTypeArgs)
     else FieldDescriptor.read(field.desc).toRawGenericType()
 
     return ClassApi.Field(
@@ -156,9 +162,10 @@ private fun getNonGeneratedParameterDescriptors(
 
 private fun readMethod(
     method: MethodNode,
-    classNode: ClassNode
+    classNode: ClassNode,
+    classTypeArgs: TypeArgDecls
 ): ClassApi.Method {
-    val signature = if (method.signature != null) MethodSignature.readFrom(method.signature) else {
+    val signature = if (method.signature != null) MethodSignature.readFrom(method.signature, classTypeArgs) else {
         val descriptor = MethodDescriptor.read(method.desc)
         val parameters = getNonGeneratedParameterDescriptors(descriptor, method)
         MethodSignature(

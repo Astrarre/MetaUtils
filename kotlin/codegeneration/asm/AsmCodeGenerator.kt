@@ -15,7 +15,8 @@ import util.*
 import java.nio.file.Path
 
 
-private fun GenericReturnType.hasAnyTypeArguments() = getContainedClassesRecursively().size > 1
+private fun GenericReturnType.hasGenericsInvolved() = this is TypeVariable
+        || getContainedClassesRecursively().any {type -> type.classNameSegments.any { it.typeArguments != null } }
 internal fun JavaReturnType.asmType(): Type = toJvmType().asmType()
 internal fun ReturnDescriptor.asmType(): Type = Type.getType(classFileName)
 
@@ -24,8 +25,8 @@ private fun writeClassImpl(
 ): Unit = with(info) {
 
 
-    val genericsInvolved = typeArguments.isNotEmpty() || superClass?.type?.hasAnyTypeArguments() == true
-            || superInterfaces.any { it.type.hasAnyTypeArguments() }
+    val genericsInvolved = typeArguments.isNotEmpty() || superClass?.type?.hasGenericsInvolved() == true
+            || superInterfaces.any { it.type.hasGenericsInvolved() }
     val signature = if (genericsInvolved) ClassSignature(typeArguments = typeArguments,
         superClass = superClass?.type ?: JavaLangObjectGenericType,
         superInterfaces = superInterfaces.map { it.type }
@@ -174,8 +175,8 @@ private class AsmGeneratedClass(
         bodyPrefix: GeneratedMethod.() -> Unit = {}
     ) {
         val descriptor = MethodDescriptor(parameters.values.map { it.toJvmType() }, returnType.toJvmType())
-        val genericsInvolved = typeArguments.isNotEmpty() || parameters.values.any { it.type.hasAnyTypeArguments() }
-                || returnType.type.hasAnyTypeArguments()
+        val genericsInvolved = typeArguments.isNotEmpty() || parameters.values.any { it.type.hasGenericsInvolved() }
+                || returnType.type.hasGenericsInvolved()
         val signature = if (genericsInvolved) {
             MethodSignature(typeArguments, parameters.values.generics(), returnType.type, throws.generics())
         } else null
@@ -217,7 +218,7 @@ private class AsmGeneratedClass(
         isFinal: Boolean,
         initializer: Expression?
     ) {
-        val genericsInvolved = type.type.hasAnyTypeArguments()
+        val genericsInvolved = type.type.hasGenericsInvolved()
         val signature = if (genericsInvolved) type.type else null
         classWriter.writeField(
             name, type.toJvmType(), signature, visibility, isStatic, isFinal,

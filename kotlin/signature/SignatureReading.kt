@@ -2,17 +2,33 @@ package signature
 
 import util.PackageName
 
-fun ClassSignature.Companion.readFrom(signature: String): ClassSignature = SignatureReader(signature).readClass()
-fun MethodSignature.Companion.readFrom(signature: String): MethodSignature = SignatureReader(signature).readMethod()
-fun GenericTypeOrPrimitive.Companion.readFrom(signature: String): FieldSignature = SignatureReader(signature).readField()
+typealias TypeArgDecls = Map<String, TypeArgumentDeclaration>
+
+fun ClassSignature.Companion.readFrom(signature: String): ClassSignature =
+    SignatureReader(signature, mapOf()).readClass()
+
+fun MethodSignature.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls): MethodSignature =
+    SignatureReader(signature, classTypeArgs).readMethod()
+
+fun GenericTypeOrPrimitive.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls): FieldSignature =
+    SignatureReader(signature, classTypeArgs ).readField()
 
 private const val doChecks = true
 
 @Suppress("NOTHING_TO_INLINE")
 @OptIn(ExperimentalStdlibApi::class)
-private class SignatureReader(private val signature: String) {
+private class SignatureReader(private val signature: String, typeVariableDeclarations: TypeArgDecls) {
     var progressPointer = 0
 
+    private val typeArgDeclarations = typeVariableDeclarations.toMutableMap()
+    private var recursiveBoundsExist = false
+
+    // In cases where there are recursive type argument bounds, we can't resolve the declarations of the bounds by reading
+    // left to right. So after we finish reading we go over the TypeVariables and replace the stub declarations with the
+    // real, resolved declarations.
+//    private fun Generic.reResolveTypeArgumentDeclarations() {
+//
+//    }
 
     fun readClass(): ClassSignature {
         check { signature.isNotEmpty() }
@@ -75,6 +91,7 @@ private class SignatureReader(private val signature: String) {
             }, skip = false
         )
         return TypeArgumentDeclaration(identifier, classBound, interfaceBounds)
+            .also { typeArgDeclarations[identifier] = it }
     }
 
 
@@ -143,7 +160,10 @@ private class SignatureReader(private val signature: String) {
     private fun readTypeVariableSignature(): TypeVariable {
         advance('T')
         val identifier = readUntil(';', skip = true)
-        return TypeVariable(identifier)
+        //TODO
+        val declaration = typeArgDeclarations[identifier] ?: TypeArgumentDeclaration("", null, listOf())
+//            ?: error("Can't find type argument declaration of type variable '$identifier'")
+        return TypeVariable(identifier, declaration)
     }
 
     private fun readPackageSpecifier(): PackageName? {
