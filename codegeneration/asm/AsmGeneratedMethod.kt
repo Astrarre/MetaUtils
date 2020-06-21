@@ -4,7 +4,6 @@ import codegeneration.*
 import descriptor.*
 import org.objectweb.asm.Opcodes
 import signature.outerClass
-import signature.toJvmString
 import signature.toJvmType
 import util.*
 
@@ -68,7 +67,7 @@ private class JvmState(
 private data class JvmLocalVariable(val index: Int, val type: JvmType)
 
 
- const val ConstructorsName = "<init>"
+const val ConstructorsName = "<init>"
 
 internal class AsmGeneratedMethod(
     private val methodWriter: AsmClassWriter.MethodBody,
@@ -162,7 +161,7 @@ internal class AsmGeneratedMethod(
         else -> error("Impossible")
     }
 
-    private fun MethodAccess.invokeOpcode(isInterface: Boolean, isSuperCall : Boolean) = when {
+    private fun MethodAccess.invokeOpcode(isInterface: Boolean, isSuperCall: Boolean) = when {
         isStatic -> Opcodes.INVOKESTATIC
         // Final methods sometimes use INVOKESPECIAL but analyzing that is difficult, INVOKEVIRTUAL will work for our purposes.
         !isSuperCall && !visibility.isPrivate -> {
@@ -191,8 +190,11 @@ internal class AsmGeneratedMethod(
             val isInterface = receiverAccess.variant.isInterface
             val receiver = if (methodAccess.isStatic) null else receiver ?: ThisExpression
             invoke(
-                opcode = methodAccess.invokeOpcode(isInterface, isSuperCall = receiver == SuperReceiver), methodName = name,
-                returnType = returnType, owner = owner, isInterface = isInterface,
+                opcode = methodAccess.invokeOpcode(isInterface, isSuperCall = receiver == SuperReceiver),
+                methodName = name,
+                returnType = returnType,
+                owner = owner,
+                isInterface = isInterface,
                 parametersToLoad = parameters.values.prependIfNotNull(receiver),
                 parameterTypes = parameters.keys
             )

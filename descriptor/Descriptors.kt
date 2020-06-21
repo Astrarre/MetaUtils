@@ -63,7 +63,7 @@ data class ObjectType(val fullClassName: QualifiedName) :
     FieldType("L${fullClassName.toSlashQualifiedString()};") {
     override fun toString() = fullClassName.shortName.toDollarQualifiedString()
 
-    constructor(qualifiedName: String, dotQualified : Boolean) : this(qualifiedName.toQualifiedName(dotQualified))
+    constructor(qualifiedName: String, dotQualified: Boolean) : this(qualifiedName.toQualifiedName(dotQualified))
 
 //    companion object {
 //        fun dotQualified(className: String) = ObjectType(className.replace(".", "/"))

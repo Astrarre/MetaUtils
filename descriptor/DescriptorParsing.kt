@@ -1,7 +1,6 @@
 package descriptor
 
 
-
 fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
     baseTypesMap[descriptor]?.let { return it }
     require(descriptor.isNotEmpty()) { "A descriptor cannot be an empty string" }

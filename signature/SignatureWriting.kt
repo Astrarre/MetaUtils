@@ -1,6 +1,6 @@
 package signature
 
-import descriptor.FieldDescriptor
+import metautils.signature.*
 import util.includeIf
 
 fun ClassSignature.toClassfileName() = typeArguments.toDeclClassfileName() +
@@ -10,7 +10,7 @@ fun MethodSignature.toClassfileName(): String =
     typeArguments.toDeclClassfileName() + "(" + parameterTypes.toClassfileName() + ")" +
             returnType.toClassfileName() + throwsSignatures.joinToString("") { "^$it" }
 
-fun FieldSignature.toClassfileName() : String = when(this){
+fun FieldSignature.toClassfileName(): String = when (this) {
     is ClassGenericType -> "L" + packageName?.toSlashQualified().orEmpty() + "/".includeIf(packageName != null) +
             classNameSegments.joinToString("$") { it.toClassfileName() } + ";"
     is TypeVariable -> "T$name;"
@@ -30,8 +30,6 @@ private fun GenericReturnType.toClassfileName(): String = when (this) {
     is FieldSignature -> toClassfileName()
     GenericReturnType.Void -> "V"
 }
-
-
 
 
 private fun SimpleClassGenericType.toClassfileName() = name + typeArguments.toArgClassfileName()

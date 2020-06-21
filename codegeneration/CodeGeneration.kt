@@ -1,7 +1,7 @@
 package codegeneration
 
 import api.*
-import signature.TypeArgumentDeclaration
+import metautils.signature.TypeArgumentDeclaration
 import util.PackageName
 import java.nio.file.Path
 

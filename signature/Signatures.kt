@@ -1,8 +1,7 @@
-package signature
+package metautils.signature
 
-import arrow.optics.optics
-import util.PackageName
 import descriptor.JvmPrimitiveType
+import util.PackageName
 import util.includeIf
 
 
@@ -19,7 +18,6 @@ data class ClassSignature(
             superInterfaces.joinToString(", ") + ")"
 }
 
-
 data class MethodSignature(
     val typeArguments: List<TypeArgumentDeclaration>?,
     val parameterTypes: List<GenericTypeOrPrimitive>,
@@ -33,8 +31,8 @@ data class MethodSignature(
 }
 
 typealias FieldSignature = GenericTypeOrPrimitive
-
 sealed class TypeArgument {
+    companion object;
     data class SpecificType(val type: GenericType, val wildcardType: WildcardType?) : TypeArgument() {
         override fun toString(): String = "? $wildcardType ".includeIf(wildcardType != null) + type
     }
@@ -59,7 +57,7 @@ sealed class GenericReturnType {
     }
 }
 
-sealed class GenericTypeOrPrimitive : GenericReturnType(), Signature{
+sealed class GenericTypeOrPrimitive : GenericReturnType(), Signature {
     companion object
 }
 
@@ -88,7 +86,6 @@ class GenericsPrimitiveType private constructor(val primitive: JvmPrimitiveType)
         val Boolean = GenericsPrimitiveType(JvmPrimitiveType.Boolean)
     }
 }
-
 sealed class GenericType : GenericTypeOrPrimitive() {
     companion object
 }
@@ -101,6 +98,7 @@ data class TypeArgumentDeclaration(
     val classBound: GenericType?,
     val interfaceBounds: List<GenericType>
 ) {
+    companion object;
     override fun toString(): String = name + " extends $classBound".includeIf(classBound != null) +
             " implements ".includeIf(interfaceBounds.isNotEmpty()) + interfaceBounds.joinToString(", ")
 }
@@ -119,7 +117,7 @@ data class ClassGenericType(
 
     companion object;
     override fun toString(): String = /*"${packageName?.toSlashQualified()}/".includeIf(packageName != null) +*/
-            classNameSegments.joinToString("$")
+        classNameSegments.joinToString("$")
 }
 
 

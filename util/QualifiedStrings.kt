@@ -111,8 +111,9 @@ data class ShortClassName(override val components: List<String>) : AbstractQuali
     fun outerMostClass() = components[0]
     fun outerClass(): ShortClassName {
         require(components.size >= 2)
-       return ShortClassName(components.dropLast(1))
+        return ShortClassName(components.dropLast(1))
     }
+
     fun innerClasses() = components.drop(1)
     fun innermostClass() = components.last()
 }

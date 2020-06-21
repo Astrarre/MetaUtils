@@ -4,9 +4,9 @@ import api.JavaType
 import api.remap
 import descriptor.ReturnDescriptor
 import descriptor.remap
-import signature.ClassGenericType
-import signature.GenericReturnType
-import signature.TypeArgumentDeclaration
+import metautils.signature.ClassGenericType
+import metautils.signature.GenericReturnType
+import metautils.signature.TypeArgumentDeclaration
 import signature.remap
 import util.*
 
@@ -45,7 +45,7 @@ class VersionPackage(private val versionPackage: String) {
 //        )
 //    } else this
 
-    fun <T : ReturnDescriptor>T.remapToApiClass() : T = remap { it.toApiClass() }
+    fun <T : ReturnDescriptor> T.remapToApiClass(): T = remap { it.toApiClass() }
     fun <T : GenericReturnType> JavaType<T>.remapToApiClass(): JavaType<T> = remap { it.toApiClass() }
     fun <T : GenericReturnType> JavaType<T>.remapToBaseClass(): JavaType<T> = remap { it.toBaseClass() }
     fun <T : GenericReturnType> T.remapToApiClass(): T = remap { it.toApiClass() }
@@ -59,7 +59,8 @@ class VersionPackage(private val versionPackage: String) {
     fun <T : GenericReturnType> List<JavaType<T>>.remapToApiClasses(): List<JavaType<T>> =
         map { it.remapToApiClass() }
 }
- fun PackageName?.isMcPackage(): Boolean = this?.startsWith("net", "minecraft") == true
- fun QualifiedName.isMcClassName(): Boolean = packageName.isMcPackage()
- fun GenericReturnType.isMcClass(): Boolean = this is ClassGenericType && packageName.isMcPackage()
- fun JavaType<*>.isMcClass(): Boolean = type.isMcClass()
+
+fun PackageName?.isMcPackage(): Boolean = this?.startsWith("net", "minecraft") == true
+fun QualifiedName.isMcClassName(): Boolean = packageName.isMcPackage()
+fun GenericReturnType.isMcClass(): Boolean = this is ClassGenericType && packageName.isMcPackage()
+fun JavaType<*>.isMcClass(): Boolean = type.isMcClass()

@@ -99,24 +99,24 @@ data class ClasspathIndex(private val classes: Map<QualifiedName, ClassEntry>) {
                 else -> error("Unrecognized primitive $c")
             }
         }
-        if (c.isArray) return c.name.replace('.', '/');
-        return ('L' + c.name + ';').replace('.', '/');
+        if (c.isArray) return c.name.replace('.', '/')
+        return ('L' + c.name + ';').replace('.', '/')
     }
 
     private fun getMethodDescriptor(m: Method): String {
         val s = buildString {
             append('(')
             for (c in m.parameterTypes) {
-                append(getDescriptorForClass(c));
+                append(getDescriptorForClass(c))
             }
             append(')')
         }
-        return s + getDescriptorForClass(m.returnType);
+        return s + getDescriptorForClass(m.returnType)
     }
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-fun indexClasspath(classPath: List<Path>, additionalEntries : Map<QualifiedName, ClassEntry>): ClasspathIndex {
+fun indexClasspath(classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>): ClasspathIndex {
     val map = classPath.flatMap { path ->
         getClasses(path).map { classNode ->
             classNode.name.toQualifiedName(dotQualified = false) to ClassEntry(

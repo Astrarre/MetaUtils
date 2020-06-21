@@ -3,6 +3,7 @@ package codegeneration.asm
 import api.JavaAnnotation
 import codegeneration.*
 import descriptor.*
+import metautils.signature.*
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
@@ -67,7 +68,7 @@ private fun ReturnDescriptor.visitNames(visitor: (QualifiedName) -> Unit): Unit 
     }
 }
 
- fun ClassAccess.toAsmAccess(visibility: Visibility, isStatic: Boolean = false): Int {
+fun ClassAccess.toAsmAccess(visibility: Visibility, isStatic: Boolean = false): Int {
     var access = 0
     if (isFinal) access = access or Opcodes.ACC_FINAL
     if (isStatic) access = access or Opcodes.ACC_STATIC

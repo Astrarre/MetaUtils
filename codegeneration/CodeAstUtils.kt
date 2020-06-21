@@ -1,10 +1,5 @@
 package codegeneration
 
-import api.AnyJavaType
-import api.ClassApi
-import api.variant
-import descriptor.JavaLangObjectJvmType
-import signature.JavaLangObjectJavaType
 import javax.lang.model.element.Modifier
 
 

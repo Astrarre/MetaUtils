@@ -5,7 +5,7 @@ import codegeneration.ClassVisibility
 import codegeneration.MethodAccess
 import codegeneration.Visibility
 import org.objectweb.asm.tree.InnerClassNode
-import signature.*
+import metautils.signature.TypeArgumentDeclaration
 import util.QualifiedName
 import util.includeIf
 
@@ -14,14 +14,11 @@ interface Visible {
 }
 
 
-
-
-
 /**
  * [ClassApi]es use dot.separated.format for the packageName always!
  */
-class ClassApi(
-    val annotations : List<JavaAnnotation>,
+data class ClassApi(
+    val annotations: List<JavaAnnotation>,
     override val visibility: ClassVisibility,
     val access: ClassAccess,
     val isStatic: Boolean,
@@ -32,7 +29,7 @@ class ClassApi(
     val methods: Collection<Method>,
     val fields: Collection<Field>,
     val innerClasses: List<ClassApi>,
-    val outerClass: Lazy<ClassApi>?,
+    val outerClass: ClassApi?,
     val asmInnerClasses: List<InnerClassNode>
 ) : Visible {
 
@@ -41,7 +38,6 @@ class ClassApi(
     }
 
     companion object;
-
 
 
     abstract class Member : Visible {
@@ -57,7 +53,7 @@ class ClassApi(
         val returnType: JavaReturnType,
         val parameters: Map<String, AnyJavaType>,
         val typeArguments: List<TypeArgumentDeclaration>,
-        val throws : List<JavaThrowableType>,
+        val throws: List<JavaThrowableType>,
         val access: MethodAccess
     ) : Member() {
         override fun toString() = "static ".includeIf(isStatic) +
@@ -76,7 +72,6 @@ class ClassApi(
     ) : Member() {
         override fun toString() = "static ".includeIf(isStatic) + "$name: $type"
     }
-
 
 
 //    override fun toString(): String {

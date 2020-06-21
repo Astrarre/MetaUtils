@@ -6,9 +6,8 @@ import codegeneration.isAbstract
 import codegeneration.isInterface
 import descriptor.MethodDescriptor
 import descriptor.ObjectType
+import metautils.signature.GenericReturnType
 import signature.*
-import util.QualifiedName
-import util.ShortClassName
 
 val ClassApi.isFinal get() = access.isFinal
 val ClassApi.variant get() = access.variant
@@ -31,19 +30,23 @@ fun ClassApi.Method.getJvmDescriptor() = MethodDescriptor(
  * Goes from top to bottom
  */
 @OptIn(ExperimentalStdlibApi::class)
-fun ClassApi.listInnerClassChain(): List<ClassApi> = buildList<ClassApi> { addToInnerClassChain(this) }.reversed()
-private fun ClassApi.outerClassCount() = listInnerClassChain().size - 1
-private fun ClassApi.addToInnerClassChain(accumulated: MutableList<ClassApi>) {
-    accumulated.add(this)
-    outerClass?.value?.addToInnerClassChain(accumulated)
+fun ClassApi.outerClassesToThis(): List<ClassApi> = buildList { visitThisAndOuterClasses { add(it) } }.reversed()
+private fun ClassApi.outerClassCount() = outerClassesToThis().size - 1
+private inline fun ClassApi.visitThisAndOuterClasses(visitor: (ClassApi) -> Unit) {
+    visitor(this)
+    if (outerClass != null) visitor(outerClass)
 }
+//private fun ClassApi.addToInnerClassChain(accumulated: MutableList<ClassApi>) {
+//    accumulated.add(this)
+//    outerClass?.value?.addToInnerClassChain(accumulated)
+//}
 
 val ClassApi.Method.isVoid get() = returnType.type == GenericReturnType.Void
 fun ClassApi.asType(): JavaClassType = name.toClassGenericType(
     if (isStatic) {
         // Only put type arguments at the end
         (0 until outerClassCount()).map { null } + listOf(typeArguments.toTypeArgumentsOfNames())
-    } else listInnerClassChain().map { it.typeArguments.toTypeArgumentsOfNames() }
+    } else outerClassesToThis().map { it.typeArguments.toTypeArgumentsOfNames() }
 ).noAnnotations()
 
 fun ClassApi.asRawType() = asJvmType().toRawJavaType()
@@ -57,10 +60,10 @@ fun ClassApi.asJvmType() = ObjectType(name)
 //    )
 //).toRawJavaType()
 
-fun ClassApi.visitClasses(visitor: (ClassApi) -> Unit) {
+fun ClassApi.visitThisAndInnerClasses(visitor: (ClassApi) -> Unit) {
     visitor(this)
     innerClasses.forEach(visitor)
 }
 
 @OptIn(ExperimentalStdlibApi::class)
-fun ClassApi.allInnerClassesAndThis() = buildList { visitClasses { add(it) } }
+fun ClassApi.allInnerClassesAndThis() = buildList { visitThisAndInnerClasses { add(it) } }

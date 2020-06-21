@@ -7,6 +7,7 @@ import api.JavaAnnotation
 import api.JavaClassType
 import api.JavaType
 import descriptor.*
+import metautils.signature.*
 import util.QualifiedName
 import util.ShortClassName
 import util.toQualifiedName
@@ -15,7 +16,7 @@ val JavaLangObjectGenericType = JavaLangObjectJvmType.toRawGenericType()
 val JavaLangObjectJavaType = AnyJavaType(JavaLangObjectGenericType, annotations = listOf())
 val VoidJavaType = ReturnDescriptor.Void.toRawGenericType().noAnnotations()
 
-fun TypeArgumentDeclaration.remap(mapper: (className: QualifiedName) -> QualifiedName?) : TypeArgumentDeclaration =
+fun TypeArgumentDeclaration.remap(mapper: (className: QualifiedName) -> QualifiedName?): TypeArgumentDeclaration =
     copy(classBound = classBound?.remap(mapper), interfaceBounds = interfaceBounds.map { it.remap(mapper) })
 
 fun <T : GenericReturnType> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {
@@ -80,7 +81,8 @@ fun GenericTypeOrPrimitive.toJvmType(): JvmType = when (this) {
 }
 
 private fun TypeVariable.resolveJvmType(): JvmType = with(declaration) {
-    classBound?.toJvmType() ?: if (interfaceBounds.isNotEmpty()) interfaceBounds[0].toJvmType() else JavaLangObjectJvmType
+    classBound?.toJvmType()
+        ?: if (interfaceBounds.isNotEmpty()) interfaceBounds[0].toJvmType() else JavaLangObjectJvmType
 }
 
 fun ClassGenericType.toJvmType(): ObjectType = ObjectType(toJvmQualifiedName())
@@ -100,7 +102,11 @@ fun AnyJavaType.toJvmType() = type.toJvmType()
 fun JavaClassType.toJvmType() = type.toJvmType()
 
 
-fun ClassGenericType.outerClass(): ClassGenericType = copy(classNameSegments = classNameSegments.dropLast(1))
+fun ClassGenericType.outerClass(): ClassGenericType {
+    check(classNameSegments.size >= 2)
+    return copy(classNameSegments = classNameSegments.dropLast(1))
+}
+
 fun JavaClassType.outerClass(): JavaClassType = copy(type = type.outerClass())
 
 fun QualifiedName.toRawGenericType(): ClassGenericType = toClassGenericType(shortName.components.map { null })

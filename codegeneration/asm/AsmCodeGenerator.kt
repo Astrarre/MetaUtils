@@ -8,6 +8,7 @@ import descriptor.JavaLangObjectJvmType
 import descriptor.MethodDescriptor
 import descriptor.ObjectType
 import descriptor.ReturnDescriptor
+import metautils.signature.*
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
 import signature.*
@@ -16,7 +17,8 @@ import java.nio.file.Path
 
 
 private fun GenericReturnType.hasGenericsInvolved() = this is TypeVariable
-        || getContainedClassesRecursively().any {type -> type.classNameSegments.any { it.typeArguments != null } }
+        || getContainedClassesRecursively().any { type -> type.classNameSegments.any { it.typeArguments != null } }
+
 internal fun JavaReturnType.asmType(): Type = toJvmType().asmType()
 internal fun ReturnDescriptor.asmType(): Type = Type.getType(classFileName)
 
@@ -74,7 +76,6 @@ class AsmCodeGenerator(private val index: ClasspathIndex) : CodeGenerator {
 
 
 private fun <T : GenericReturnType> Iterable<JavaType<T>>.generics() = map { it.type }
-
 
 
 private class AsmGeneratedClass(
@@ -147,7 +148,7 @@ private class AsmGeneratedClass(
     override fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
         val innerClassName = className.innerClass(info.shortName)
         classWriter.trackInnerClass(innerClassName)
-        writeClassImpl(info, innerClassName, srcRoot,index)
+        writeClassImpl(info, innerClassName, srcRoot, index)
 //        classWriter.visitNestMember(innerClassName.toSlashQualifiedString())
     }
 
@@ -241,7 +242,6 @@ private class AsmGeneratedClass(
     }
 
 }
-
 
 
 object AbstractGeneratedMethod : GeneratedMethod {

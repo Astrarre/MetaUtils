@@ -1,15 +1,21 @@
-package api
+@file:Suppress("IfThenToElvis")
 
+package metautils.api
+
+import api.*
 import asm.*
 import codegeneration.ClassAccess
 import codegeneration.ClassVariant
 import codegeneration.MethodAccess
 import descriptor.*
+import metautils.signature.*
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
-import signature.*
+import signature.fromRawClassString
+import signature.noAnnotations
+import signature.toRawGenericType
 import util.*
 import java.nio.file.Path
 
@@ -50,23 +56,34 @@ private fun Sequence<Path>.readFromSequence(rootPath: Path): Collection<ClassApi
 private fun readSingularClass(
     rootPath: Path,
     path: Path,
-    outerClass: Lazy<ClassApi>?,
+    outerClass: ClassApi?,
     isStatic: Boolean
 ): ClassApi {
 
 
     val classNode = readToClassNode(path)
 
-    val signature = if (classNode.signature != null) ClassSignature.readFrom(classNode.signature)
-    else ClassSignature(
-        superClass = ClassGenericType.fromRawClassString(classNode.superName),
-        superInterfaces = classNode.interfaces.map {
-            ClassGenericType.fromRawClassString(it)
-        },
-        typeArguments = listOf()
-    )
+    // Need to pass the type args of outer classes to be able to resolve type variables in this class
+    val nonStaticOuterClassTypeArgs = if (outerClass == null) mapOf()
+    else outerClass.outerClassesToThis()
+        .filter { !it.isStatic }
+        .flatMap { classApi -> classApi.typeArguments.map { it.name to it } }
+        .toMap()
 
-    val classTypeArgMap = signature.typeArguments?.map { it.name to it }?.toMap() ?: mapOf()
+    val signature = if (classNode.signature != null) {
+        ClassSignature.readFrom(classNode.signature, nonStaticOuterClassTypeArgs)
+    } else {
+        ClassSignature(
+            superClass = ClassGenericType.fromRawClassString(classNode.superName),
+            superInterfaces = classNode.interfaces.map {
+                ClassGenericType.fromRawClassString(it)
+            },
+            typeArguments = listOf()
+        )
+    }
+
+    val classTypeArgMap = (signature.typeArguments?.map { it.name to it }?.toMap() ?: mapOf()) +
+            nonStaticOuterClassTypeArgs
 
     val methods = classNode.methods.map { readMethod(it, classNode, classTypeArgs = classTypeArgMap) }
     val fields = classNode.fields.map { readField(it, classTypeArgs = classTypeArgMap) }
@@ -74,30 +91,17 @@ private fun readSingularClass(
     val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
 
 
-
 //    val innerClasses = classNode.innerClasses.map { it.name to it }.toMap()
     val innerClassShortName = with(fullClassName.shortName.components) { if (size == 1) null else last() }
 
-
-    // Unfortunate hack to get the outer class reference into the inner classes
-    var classApi: ClassApi? = null
-    classApi = ClassApi(
+    val classApi = ClassApi(
         name = fullClassName,
         superClass = if (classNode.superName == JavaLangObjectString) null else {
             JavaClassType(signature.superClass, annotations = listOf())
         },
         superInterfaces = signature.superInterfaces.map { JavaClassType(it, annotations = listOf()) },
         methods = methods.toSet(), fields = fields.toSet(),
-        innerClasses = classNode.innerClasses
-            .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
-            .map {
-                readSingularClass(
-                    rootPath,
-                    rootPath.resolve("${it.name}.class"),
-                    lazy { classApi!! },
-                    isStatic = it.isStatic
-                )
-            },
+        innerClasses = listOf(), // Initialized further down
         outerClass = outerClass,
         visibility = classNode.visibility,
         access = ClassAccess(
@@ -118,7 +122,18 @@ private fun readSingularClass(
         asmInnerClasses = classNode.innerClasses
     )
 
-    return classApi
+    // We need to create the inner classes after creating the classapi, so we can specify what is their outer class.
+    return classApi.copy(innerClasses = classNode.innerClasses
+        .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
+        .map {
+            readSingularClass(
+                rootPath,
+                rootPath.resolve("${it.name}.class"),
+                classApi,
+                isStatic = it.isStatic
+            )
+        }
+    )
 }
 
 private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<AnnotationNode>?): List<JavaAnnotation> {
@@ -131,7 +146,7 @@ private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<Ann
     return combined.map { JavaAnnotation(FieldType.read(it.desc) as ObjectType) }
 }
 
-private fun readField(field: FieldNode, classTypeArgs : TypeArgDecls): ClassApi.Field {
+private fun readField(field: FieldNode, classTypeArgs: TypeArgDecls): ClassApi.Field {
     val signature = if (field.signature != null) FieldSignature.readFrom(field.signature, classTypeArgs)
     else FieldDescriptor.read(field.desc).toRawGenericType()
 
@@ -195,7 +210,8 @@ private fun readMethod(
                 )
             }.toMap(),
         throws = signature.throwsSignatures.map { it.noAnnotations() },
-        access = MethodAccess(isStatic = method.isStatic,
+        access = MethodAccess(
+            isStatic = method.isStatic,
             isFinal = method.isFinal,
             isAbstract = method.isAbstract,
             visibility = visibility

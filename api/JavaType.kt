@@ -1,6 +1,10 @@
 package api
 
 import descriptor.ObjectType
+import metautils.signature.ClassGenericType
+import metautils.signature.GenericReturnType
+import metautils.signature.GenericTypeOrPrimitive
+import metautils.signature.ThrowableType
 import signature.*
 import util.QualifiedName
 
@@ -18,7 +22,7 @@ typealias JavaReturnType = JavaType<GenericReturnType>
 typealias JavaThrowableType = JavaType<ThrowableType>
 
 //TODO: annotations theoretically can also have values
-data class JavaAnnotation(val type: ObjectType/*, val parameters : Map<String, >*/){
+data class JavaAnnotation(val type: ObjectType/*, val parameters : Map<String, >*/) {
     override fun toString(): String = "@$type"
 }
 

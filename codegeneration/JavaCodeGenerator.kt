@@ -5,7 +5,7 @@ import api.AnyJavaType
 import api.JavaReturnType
 import api.JavaType
 import com.squareup.javapoet.*
-import signature.TypeArgumentDeclaration
+import metautils.signature.TypeArgumentDeclaration
 import util.PackageName
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
@@ -97,8 +97,6 @@ class JavaGeneratedClass(
 
         typeSpec.addMethod(method)
     }
-
-
 
 
     override fun addConstructor(info: MethodInfo) {

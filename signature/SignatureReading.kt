@@ -1,19 +1,22 @@
-package signature
+package metautils.signature
 
 import util.PackageName
+import util.applyIf
 
 typealias TypeArgDecls = Map<String, TypeArgumentDeclaration>
 
-fun ClassSignature.Companion.readFrom(signature: String): ClassSignature =
-    SignatureReader(signature, mapOf()).readClass()
+fun ClassSignature.Companion.readFrom(signature: String, outerClassTypeArgs : TypeArgDecls): ClassSignature =
+    SignatureReader(signature, outerClassTypeArgs).readClass()
 
 fun MethodSignature.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls): MethodSignature =
     SignatureReader(signature, classTypeArgs).readMethod()
 
 fun GenericTypeOrPrimitive.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls): FieldSignature =
-    SignatureReader(signature, classTypeArgs ).readField()
+    SignatureReader(signature, classTypeArgs).readField()
 
 private const val doChecks = true
+
+private val StubTypeArgDecl = TypeArgumentDeclaration("", null, listOf())
 
 @Suppress("NOTHING_TO_INLINE")
 @OptIn(ExperimentalStdlibApi::class)
@@ -23,12 +26,62 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
     private val typeArgDeclarations = typeVariableDeclarations.toMutableMap()
     private var recursiveBoundsExist = false
 
+    private fun ClassSignature.reResolveTypeArgumentDeclarations() = copy(
+        typeArguments = typeArguments?.reResolveDecl(),
+        superClass = superClass.reResolve(),
+        superInterfaces = superInterfaces.map { it.reResolve() }
+    )
+
+    private fun MethodSignature.reResolveTypeArgumentDeclarations() = copy(
+        typeArguments = typeArguments?.reResolveDecl(),
+        parameterTypes = parameterTypes.map { it.reResolve() },
+        returnType = returnType.reResolve(),
+        throwsSignatures = throwsSignatures.map { it.reResolve() }
+    )
+
     // In cases where there are recursive type argument bounds, we can't resolve the declarations of the bounds by reading
     // left to right. So after we finish reading we go over the TypeVariables and replace the stub declarations with the
     // real, resolved declarations.
-//    private fun Generic.reResolveTypeArgumentDeclarations() {
-//
-//    }
+    private fun GenericReturnType.reResolve(): GenericReturnType = when (this) {
+        is GenericTypeOrPrimitive -> reResolve()
+        GenericReturnType.Void -> this
+    }
+
+    private fun GenericTypeOrPrimitive.reResolve(): GenericTypeOrPrimitive = when (this) {
+        is GenericsPrimitiveType -> this
+        is GenericType -> reResolve()
+    }
+
+    private fun GenericType.reResolve(): GenericType = when (this) {
+        is ThrowableType -> reResolve()
+        is ArrayGenericType -> copy(componentType = componentType.reResolve())
+    }
+
+    private fun ThrowableType.reResolve(): ThrowableType = when (this) {
+        is ClassGenericType -> reResolve()
+        is TypeVariable -> copy(
+            declaration = typeArgDeclarations[name]
+                ?: error("Can't find type argument declaration of type variable '$name'")
+        )
+    }
+
+    private fun ClassGenericType.reResolve(): ClassGenericType = copy(classNameSegments =
+    classNameSegments.map { it.copy(typeArguments = it.typeArguments.reResolve()) })
+
+    private fun List<TypeArgument>?.reResolve(): List<TypeArgument>? = this?.map {
+        when (it) {
+            is TypeArgument.SpecificType -> it.copy(type = it.type.reResolve())
+            TypeArgument.AnyType -> it
+        }
+    }
+
+    private fun TypeArgumentDeclaration.reResolve() = copy(
+        classBound = classBound?.reResolve(), interfaceBounds = interfaceBounds.map { it.reResolve() }
+    )
+
+    private fun List<TypeArgumentDeclaration>?.reResolveDecl(): List<TypeArgumentDeclaration>? = this?.map {
+        it.reResolve()
+    }
 
     fun readClass(): ClassSignature {
         check { signature.isNotEmpty() }
@@ -44,6 +97,7 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
             skip = false
         )
         return ClassSignature(formalTypeParameters, superClassSignature, superInterfaceSignatures)
+            .applyIf(recursiveBoundsExist) { it.reResolveTypeArgumentDeclarations() }
     }
 
     fun readMethod(): MethodSignature {
@@ -57,9 +111,10 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
             skip = false
         )
         return MethodSignature(formalTypeParameters, parameterTypes, returnType, throws)
+            .applyIf(recursiveBoundsExist) { it.reResolveTypeArgumentDeclarations() }
     }
 
-    fun readField(): FieldSignature = readFieldTypeSignature()
+    fun readField(): FieldSignature = readFieldTypeSignature().applyIf(recursiveBoundsExist) { it.reResolve() }
 
     private fun readThrowsSignature(): ThrowableType {
         advance('^')
@@ -160,9 +215,12 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
     private fun readTypeVariableSignature(): TypeVariable {
         advance('T')
         val identifier = readUntil(';', skip = true)
-        //TODO
-        val declaration = typeArgDeclarations[identifier] ?: TypeArgumentDeclaration("", null, listOf())
-//            ?: error("Can't find type argument declaration of type variable '$identifier'")
+        val declaration = typeArgDeclarations[identifier] ?: run {
+            // If we can't find it we assume it's defined later on, which means it's a recursive definition
+            // If indeed it is never defined it will throw in reResolveTypeArgumentDeclarations
+            recursiveBoundsExist = true
+            StubTypeArgDecl
+        }
         return TypeVariable(identifier, declaration)
     }
 
