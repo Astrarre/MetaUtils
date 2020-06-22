@@ -7,6 +7,7 @@ import asm.*
 import codegeneration.ClassAccess
 import codegeneration.ClassVariant
 import codegeneration.MethodAccess
+import codegeneration.Visibility
 import descriptor.*
 import metautils.signature.*
 import org.objectweb.asm.tree.AnnotationNode
@@ -48,7 +49,7 @@ private fun Sequence<Path>.readFromSequence(rootPath: Path): Collection<ClassApi
     it.isClassfile() && '$' !in it.toString()
 }
 //            .filter { "Concrete" in it.toString() }
-    .map { readSingularClass(rootPath, it, outerClass = null, isStatic = false) }
+    .map { readSingularClass(rootPath, it, outerClass = null, isStatic = false, isProtected = false) }
     .toList()
 
 
@@ -57,7 +58,8 @@ private fun readSingularClass(
     rootPath: Path,
     path: Path,
     outerClass: ClassApi?,
-    isStatic: Boolean
+    isStatic: Boolean,
+    isProtected: Boolean
 ): ClassApi {
 
 
@@ -103,7 +105,7 @@ private fun readSingularClass(
         methods = methods.toSet(), fields = fields.toSet(),
         innerClasses = listOf(), // Initialized further down
         outerClass = outerClass,
-        visibility = classNode.visibility,
+        visibility = if (isProtected) Visibility.Protected else classNode.visibility,
         access = ClassAccess(
             variant = with(classNode) {
                 when {
@@ -130,7 +132,8 @@ private fun readSingularClass(
                 rootPath,
                 rootPath.resolve("${it.name}.class"),
                 classApi,
-                isStatic = it.isStatic
+                isStatic = it.isStatic,
+                isProtected = it.isProtected
             )
         }
     )

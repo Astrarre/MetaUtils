@@ -1,7 +1,8 @@
-package testing
+package metautils.testing
 
-import util.directChildren
-import util.exists
+import util.*
+import java.io.File
+import java.net.URLClassLoader
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -16,8 +17,28 @@ fun getResource(path: String): Path = Paths.get(
     }
 }
 
+fun verifyClassFiles(dir: Path, classpath: List<Path>) {
+    require(dir.isDirectory())
 
-typealias Something = ArrayList<*>
+    val classLoader = URLClassLoader(
+        arrayOf(dir.toUri().toURL()) + classpath.map { it.toUri().toURL() }
+        /* , this::class.java.classLoader*/
+    )
+
+    dir.recursiveChildren().forEach {
+        if (!it.isClassfile()) return@forEach
+        val relativePath = dir.relativize(it)
+        val className = relativePath.toString().replace(File.separator, ".").removeSuffix(".class")
+        try {
+            Class.forName(className, true, classLoader)
+        } catch (e: Throwable) {
+            println("Error in class $className")
+            throw e
+        }
+    }
+
+}
+
 
 //@DslMarker
 //annotation class JarDsl

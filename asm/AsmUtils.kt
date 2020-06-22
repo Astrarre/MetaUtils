@@ -71,6 +71,9 @@ fun asmAccessOpcodeAsString(access: Int): String = buildString {
     }
 }
 
+fun main(){
+    println(asmAccessOpcodeAsString(0x21))
+}
 
 private val Int.static get() = opCode(Opcodes.ACC_STATIC)
 private val Int.private get() = opCode(Opcodes.ACC_PRIVATE)
@@ -122,5 +125,6 @@ val ClassNode.visibility: ClassVisibility
     }
 
 val InnerClassNode.isStatic get() = access.opCode(Opcodes.ACC_STATIC)
+val InnerClassNode.isProtected get() = access.opCode(Opcodes.ACC_PROTECTED)
 
 val ParameterNode.isMandated get() = access.opCode(Opcodes.ACC_MANDATED)

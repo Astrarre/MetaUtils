@@ -19,7 +19,7 @@ interface Visible {
  */
 data class ClassApi(
     val annotations: List<JavaAnnotation>,
-    override val visibility: ClassVisibility,
+    override val visibility: Visibility,
     val access: ClassAccess,
     val isStatic: Boolean,
     val name: QualifiedName,
