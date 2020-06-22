@@ -25,11 +25,9 @@ internal fun ReturnDescriptor.asmType(): Type = Type.getType(classFileName)
 private fun writeClassImpl(
     info: ClassInfo, className: QualifiedName, srcRoot: Path, index: ClasspathIndex
 ): Unit = with(info) {
-
-
     val genericsInvolved = typeArguments.isNotEmpty() || superClass?.type?.hasGenericsInvolved() == true
             || superInterfaces.any { it.type.hasGenericsInvolved() }
-    val signature = if (genericsInvolved) ClassSignature(typeArguments = typeArguments,
+    val signature = if (genericsInvolved) ClassSignature(typeArguments = typeArguments.let { if(it.isEmpty()) null else it } ,
         superClass = superClass?.type ?: JavaLangObjectGenericType,
         superInterfaces = superInterfaces.map { it.type }
     ) else null
@@ -186,7 +184,8 @@ private class AsmGeneratedClass(
             name, access, descriptor, signature,
             annotations = returnType.annotations,
             parameterAnnotations = parameters.values
-                .mapIndexed { i, paramType -> i to paramType.annotations }.toMap()
+                .mapIndexed { i, paramType -> i to paramType.annotations }.toMap(),
+            throws = throws.map { it.toJvmType() }
         ) {
             if (access.isAbstract) {
                 AbstractGeneratedMethod.apply(bodyPrefix).apply(body)

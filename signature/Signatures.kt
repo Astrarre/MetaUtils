@@ -12,6 +12,9 @@ data class ClassSignature(
     val superClass: ClassGenericType,
     val superInterfaces: List<ClassGenericType>
 ) : Signature {
+    init {
+        check(typeArguments == null || typeArguments.isNotEmpty())
+    }
     companion object;
     override fun toString(): String = "<${typeArguments?.joinToString(", ")}> ".includeIf(typeArguments != null) +
             "(extends $superClass" + ", implements ".includeIf(superInterfaces.isNotEmpty()) +

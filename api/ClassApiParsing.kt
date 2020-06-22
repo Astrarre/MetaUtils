@@ -78,7 +78,7 @@ private fun readSingularClass(
             superInterfaces = classNode.interfaces.map {
                 ClassGenericType.fromRawClassString(it)
             },
-            typeArguments = listOf()
+            typeArguments = null
         )
     }
 

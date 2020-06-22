@@ -176,6 +176,7 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
             signature: MethodSignature?,
             annotations: List<JavaAnnotation>,
             parameterAnnotations: Map<Int, List<JavaAnnotation>>,
+            throws: List<JvmType>,
             init: MethodBody.() -> Unit
         ) {
 
@@ -183,10 +184,12 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
             signature?.visitNames { it.track() }
             annotations.trackAno()
             parameterAnnotations.values.forEach { it.trackAno() }
+            throws.forEach { it.track() }
 
             val methodWriter = classWriter.visitMethod(
                 access.toAsmAccess(),
-                name, descriptor.classFileName, signature?.toClassfileName(), null
+                name, descriptor.classFileName, signature?.toClassfileName(),
+                throws.map { it.toJvmString() }.toTypedArray()
             )
 
             for (annotation in annotations) {

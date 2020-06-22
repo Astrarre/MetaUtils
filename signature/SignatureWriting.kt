@@ -1,6 +1,5 @@
-package signature
+package metautils.signature
 
-import metautils.signature.*
 import util.includeIf
 
 fun ClassSignature.toClassfileName() = typeArguments.toDeclClassfileName() +
@@ -8,7 +7,7 @@ fun ClassSignature.toClassfileName() = typeArguments.toDeclClassfileName() +
 
 fun MethodSignature.toClassfileName(): String =
     typeArguments.toDeclClassfileName() + "(" + parameterTypes.toClassfileName() + ")" +
-            returnType.toClassfileName() + throwsSignatures.joinToString("") { "^$it" }
+            returnType.toClassfileName() + throwsSignatures.joinToString("") { "^${it.toClassfileName()}" }
 
 fun FieldSignature.toClassfileName(): String = when (this) {
     is ClassGenericType -> "L" + packageName?.toSlashQualified().orEmpty() + "/".includeIf(packageName != null) +
