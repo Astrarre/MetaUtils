@@ -2,6 +2,7 @@ package codegeneration.asm
 
 import codegeneration.*
 import descriptor.*
+import metautils.codegeneration.GeneratedMethod
 import metautils.codegeneration.asm.AsmClassWriter
 import metautils.descriptor.JvmType
 import metautils.descriptor.MethodDescriptor
@@ -154,7 +155,7 @@ internal class AsmGeneratedMethod(
     }
 
     private fun Assignable.assign() = when (this) {
-        is VariableExpression -> TODO()
+        is VariableExpression -> error("Variable expressions are not supported by the ASM generator yet") // soft to do
         is FieldExpression -> {
 //            receiver.addOpcodes()
             val isStatic = receiver is ClassReceiver

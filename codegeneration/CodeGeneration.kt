@@ -1,5 +1,9 @@
-package codegeneration
+package metautils.codegeneration
 
+import codegeneration.ClassAccess
+import codegeneration.Expression
+import codegeneration.Statement
+import codegeneration.Visibility
 import metautils.api.*
 import metautils.signature.TypeArgumentDeclaration
 import metautils.util.PackageName

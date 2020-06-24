@@ -47,6 +47,6 @@ class MethodAsmNode(override val node: MethodNode, private val className: String
     override val uniqueIdentifier get() = UniqueIdentifier.NameDesc(node.name, node.desc)
 }
 
-//TODO: handle passing of class name information in the case of inner classes
+//soft to do: handle passing of class name information in the case of inner classes
 val ClassNode.fieldsWrapped get() = fields.map { FieldAsmNode(it, name) }
 val ClassNode.methodsWrapped get() = methods.map { MethodAsmNode(it, name) }

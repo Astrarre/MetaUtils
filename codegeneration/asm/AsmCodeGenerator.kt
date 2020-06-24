@@ -5,6 +5,7 @@ import metautils.api.JavaReturnType
 import metautils.api.JavaType
 import codegeneration.*
 import descriptor.JavaLangObjectJvmType
+import metautils.codegeneration.*
 import metautils.codegeneration.asm.AsmClassWriter
 import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.ObjectType
@@ -155,7 +156,7 @@ private class AsmGeneratedClass(
     }
 
     override fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
-        if (!isStatic) TODO("Non-static inner classes are not supported by the ASM generator yet")
+        if (!isStatic) error("Non-static inner classes are not supported by the ASM generator yet")
         val innerClassName = className.innerClass(info.shortName)
         classWriter.trackInnerClass(innerClassName)
         writeClassImpl(info, innerClassName, srcRoot, index)

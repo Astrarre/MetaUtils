@@ -89,7 +89,7 @@ fun TypeArgumentDeclaration.toTypeName(): TypeVariableName = TypeVariableName.ge
 )
 
 fun JavaType<*>.toTypeName(): TypeName {
-    //TODO: annotations
+    //soft to do: annotations
     return type.toTypeName()
 }
 
@@ -166,7 +166,6 @@ private fun ObjectType.toTypeName(): ClassName {
     )
 }
 
-//TODO: replace with normal string?
 internal data class FormattedString(val string: String, val formatArguments: List<JavaType<*>>) {
     fun mapString(map: (String) -> String) = copy(string = map(string))
     fun appendArg(arg: JavaType<*>) = copy(formatArguments = formatArguments + arg)

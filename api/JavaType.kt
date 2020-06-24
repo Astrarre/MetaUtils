@@ -17,7 +17,7 @@ typealias AnyJavaType = JavaType<GenericTypeOrPrimitive>
 typealias JavaReturnType = JavaType<GenericReturnType>
 typealias JavaThrowableType = JavaType<ThrowableType>
 
-//TODO: annotations theoretically can also have values
+//soft to do: annotations theoretically can also have values
 data class JavaAnnotation(val type: ObjectType/*, val parameters : Map<String, >*/) {
     override fun toString(): String = "@$type"
 }

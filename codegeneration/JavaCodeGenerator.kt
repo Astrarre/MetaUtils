@@ -1,13 +1,11 @@
-package codegeneration
+package metautils.codegeneration
 
 
+import codegeneration.*
 import metautils.api.AnyJavaType
 import metautils.api.JavaReturnType
 import metautils.api.JavaType
 import com.squareup.javapoet.*
-import metautils.codegeneration.JavaCodeWriter
-import metautils.codegeneration.toAnnotationSpec
-import metautils.codegeneration.toTypeName
 import metautils.signature.TypeArgumentDeclaration
 import metautils.util.PackageName
 import java.nio.file.Path
@@ -29,7 +27,7 @@ object JavaCodeGenerator : CodeGenerator {
         JavaFile.builder(
             packageName?.toDotQualified() ?: "",
             generatedClass.build()
-        ).skipJavaLangImports(true).build().writeTo(srcRoot)
+        ).skipJavaLangImports(true). build().writeTo(srcRoot)
     }
 
 
@@ -82,7 +80,7 @@ class JavaGeneratedClass(
     ) {
         val method = generateMethod(methodInfo, name).apply {
             addTypeVariables(typeArguments.map { it.toTypeName() })
-            //TODO: the fact the annotations are attached to the return type is a bit wrong,
+            //soft to do: the fact the annotations are attached to the return type is a bit wrong,
             // but in java if you put the same annotation on the method and return type
             // it counts as duplicating the annotation...
             returns(returnType.toTypeName())
