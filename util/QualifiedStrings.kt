@@ -1,4 +1,4 @@
-package util
+package metautils.util
 
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -7,6 +7,10 @@ data class QualifiedName(
     // Dot or slash qualified
     val packageName: PackageName?, val shortName: ShortClassName
 ) {
+    companion object {
+        val Empty = QualifiedName(null, ShortClassName(listOf("")))
+    }
+
 
     private fun toQualified(packageSeparator: String, classSeparator: String): String =
         if (packageName == null) shortName.toDollarQualifiedString() else

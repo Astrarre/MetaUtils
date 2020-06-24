@@ -1,12 +1,15 @@
 package codegeneration
 
 
-import api.AnyJavaType
-import api.JavaReturnType
-import api.JavaType
+import metautils.api.AnyJavaType
+import metautils.api.JavaReturnType
+import metautils.api.JavaType
 import com.squareup.javapoet.*
+import metautils.codegeneration.JavaCodeWriter
+import metautils.codegeneration.toAnnotationSpec
+import metautils.codegeneration.toTypeName
 import metautils.signature.TypeArgumentDeclaration
-import util.PackageName
+import metautils.util.PackageName
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 

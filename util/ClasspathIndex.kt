@@ -1,10 +1,11 @@
-package util
+package metautils.util
 
 import asm.readToClassNode
 import descriptor.JavaLangObjectName
-import descriptor.MethodDescriptor
-import descriptor.read
+import metautils.descriptor.MethodDescriptor
+import metautils.descriptor.read
 import org.objectweb.asm.tree.ClassNode
+import util.*
 import java.lang.reflect.Method
 import java.nio.file.Path
 
@@ -16,7 +17,8 @@ data class ClassEntry(
     val methods: Set<MethodEntry>,
     val superClass: QualifiedName?,
     val superInterfaces: List<QualifiedName>,
-    val access: Int
+    val access: Int,
+    val name: QualifiedName
 )
 
 private val ClassEntry.directSuperTypes: List<QualifiedName>
@@ -44,7 +46,8 @@ data class ClasspathIndex(private val classes: Map<QualifiedName, ClassEntry>) {
                     .toSet(),
                 superInterfaces = clazz.interfaces.map { it.name.toQualifiedName(dotQualified = true) },
                 superClass = clazz.superclass?.name?.toQualifiedName(dotQualified = true),
-                access = clazz.modifiers // I think this is the same
+                access = clazz.modifiers, // I think this is the same
+                name = className
             )
         }
     } else {
@@ -64,15 +67,23 @@ data class ClasspathIndex(private val classes: Map<QualifiedName, ClassEntry>) {
 
     fun accessOf(className: QualifiedName) = getClassEntry(className).access
 
-    fun classHasMethodIgnoringReturnType(
-        className: QualifiedName,
-        methodName: String,
-        methodDescriptor: MethodDescriptor
-    ): Boolean = getClassEntry(className).methods.any {
-        if (it.name != methodName) return@any false
-        val descriptor = it.descriptorParsed.value
-        descriptor.parameterDescriptors == methodDescriptor.parameterDescriptors
-    }
+//    /**
+//     * Not including Object itself
+//     */
+//    fun getAllSuperClassesFromClassToObject(className: QualifiedName): List<QualifiedName> {
+//        return recursiveList(getClassEntry(className)) { next -> next.superClass?.let { getClassEntry(it) } }
+//            .map { it.name }
+//    }
+
+//    fun classHasMethodIgnoringReturnType(
+//        className: QualifiedName,
+//        methodName: String,
+//        methodDescriptor: MethodDescriptor
+//    ): Boolean = getClassEntry(className).methods.any {
+//        if (it.name != methodName) return@any false
+//        val descriptor = it.descriptorParsed.value
+//        descriptor.parameterDescriptors == methodDescriptor.parameterDescriptors
+//    }
 
     fun getSuperTypesRecursively(className: QualifiedName): Set<QualifiedName> {
         return (getSuperTypesRecursivelyImpl(className) + JavaLangObjectName).toSet()
@@ -119,11 +130,13 @@ data class ClasspathIndex(private val classes: Map<QualifiedName, ClassEntry>) {
 fun indexClasspath(classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>): ClasspathIndex {
     val map = classPath.flatMap { path ->
         getClasses(path).map { classNode ->
-            classNode.name.toQualifiedName(dotQualified = false) to ClassEntry(
+            val name = classNode.name.toQualifiedName(dotQualified = false)
+            name to ClassEntry(
                 methods = classNode.methods.map { MethodEntry(it.name, it.desc) }.toHashSet(),
                 superClass = classNode.superName.toQualifiedName(dotQualified = false),
                 superInterfaces = classNode.interfaces.map { it.toQualifiedName(dotQualified = false) },
-                access = classNode.access
+                access = classNode.access,
+                name = name
             )
         }
     }.toMap()

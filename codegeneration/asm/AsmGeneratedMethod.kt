@@ -2,10 +2,15 @@ package codegeneration.asm
 
 import codegeneration.*
 import descriptor.*
+import metautils.codegeneration.asm.AsmClassWriter
+import metautils.descriptor.JvmType
+import metautils.descriptor.MethodDescriptor
+import metautils.descriptor.ObjectType
+import metautils.descriptor.ReturnDescriptor
+import metautils.util.*
 import org.objectweb.asm.Opcodes
-import signature.outerClass
-import signature.toJvmType
-import util.*
+import metautils.signature.outerClass
+import metautils.signature.toJvmType
 
 private const val printStackOps = false
 

@@ -1,12 +1,8 @@
-package api
+package metautils.api
 
-import descriptor.ObjectType
-import metautils.signature.ClassGenericType
-import metautils.signature.GenericReturnType
-import metautils.signature.GenericTypeOrPrimitive
-import metautils.signature.ThrowableType
-import signature.*
-import util.QualifiedName
+import metautils.descriptor.ObjectType
+import metautils.signature.*
+import metautils.util.QualifiedName
 
 
 // This is actually not a complete representation of java type since it doesn't have annotations in type arguments,

@@ -1,10 +1,11 @@
 package codegeneration
 
-import api.AnyJavaType
-import api.JavaClassType
-import descriptor.JvmType
-import descriptor.ObjectType
-import descriptor.ReturnDescriptor
+import metautils.api.AnyJavaType
+import metautils.api.JavaClassType
+import metautils.codegeneration.JavaCodeWriter
+import metautils.descriptor.JvmType
+import metautils.descriptor.ObjectType
+import metautils.descriptor.ReturnDescriptor
 
 sealed class Code {
     override fun toString(): String {

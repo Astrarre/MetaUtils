@@ -1,7 +1,7 @@
 package metautils.signature
 
-import util.PackageName
-import util.applyIf
+import metautils.util.PackageName
+import metautils.util.applyIf
 
 typealias TypeArgDecls = Map<String, TypeArgumentDeclaration>
 
@@ -26,62 +26,29 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
     private val typeArgDeclarations = typeVariableDeclarations.toMutableMap()
     private var recursiveBoundsExist = false
 
+    // In cases where there are recursive type argument bounds, we can't resolve the declarations of the bounds by reading
+    // left to right. So after we finish reading we go over the TypeVariables and replace the stub declarations with the
+    // real, resolved declarations.
+
     private fun ClassSignature.reResolveTypeArgumentDeclarations() = copy(
-        typeArguments = typeArguments?.reResolveDecl(),
+        typeArguments = typeArguments?.mapTypeVariablesDecl { it.reResolve() },
         superClass = superClass.reResolve(),
         superInterfaces = superInterfaces.map { it.reResolve() }
     )
 
     private fun MethodSignature.reResolveTypeArgumentDeclarations() = copy(
-        typeArguments = typeArguments?.reResolveDecl(),
+        typeArguments = typeArguments?.mapTypeVariablesDecl { it.reResolve() },
         parameterTypes = parameterTypes.map { it.reResolve() },
         returnType = returnType.reResolve(),
         throwsSignatures = throwsSignatures.map { it.reResolve() }
     )
 
-    // In cases where there are recursive type argument bounds, we can't resolve the declarations of the bounds by reading
-    // left to right. So after we finish reading we go over the TypeVariables and replace the stub declarations with the
-    // real, resolved declarations.
-    private fun GenericReturnType.reResolve(): GenericReturnType = when (this) {
-        is GenericTypeOrPrimitive -> reResolve()
-        GenericReturnType.Void -> this
-    }
-
-    private fun GenericTypeOrPrimitive.reResolve(): GenericTypeOrPrimitive = when (this) {
-        is GenericsPrimitiveType -> this
-        is GenericType -> reResolve()
-    }
-
-    private fun GenericType.reResolve(): GenericType = when (this) {
-        is ThrowableType -> reResolve()
-        is ArrayGenericType -> copy(componentType = componentType.reResolve())
-    }
-
-    private fun ThrowableType.reResolve(): ThrowableType = when (this) {
-        is ClassGenericType -> reResolve()
-        is TypeVariable -> copy(
+    private fun TypeVariable.reResolve(): TypeVariable = copy(
             declaration = typeArgDeclarations[name]
                 ?: error("Can't find type argument declaration of type variable '$name'")
-        )
-    }
-
-    private fun ClassGenericType.reResolve(): ClassGenericType = copy(classNameSegments =
-    classNameSegments.map { it.copy(typeArguments = it.typeArguments.reResolve()) })
-
-    private fun List<TypeArgument>?.reResolve(): List<TypeArgument>? = this?.map {
-        when (it) {
-            is TypeArgument.SpecificType -> it.copy(type = it.type.reResolve())
-            TypeArgument.AnyType -> it
-        }
-    }
-
-    private fun TypeArgumentDeclaration.reResolve() = copy(
-        classBound = classBound?.reResolve(), interfaceBounds = interfaceBounds.map { it.reResolve() }
     )
 
-    private fun List<TypeArgumentDeclaration>?.reResolveDecl(): List<TypeArgumentDeclaration>? = this?.map {
-        it.reResolve()
-    }
+    private fun <T : GenericReturnType> T.reResolve() = mapTypeVariables { it.reResolve() }
 
     fun readClass(): ClassSignature {
         check { signature.isNotEmpty() }

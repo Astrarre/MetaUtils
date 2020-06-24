@@ -1,7 +1,8 @@
 package descriptor
 
-import util.QualifiedName
-import util.toQualifiedName
+import metautils.descriptor.*
+import metautils.util.QualifiedName
+import metautils.util.toQualifiedName
 
 @Suppress("UNCHECKED_CAST")
 fun <T : Descriptor> T.remap(mapper: (className: QualifiedName) -> QualifiedName?): T = when (this) {

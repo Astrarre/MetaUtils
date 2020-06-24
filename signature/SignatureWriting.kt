@@ -1,6 +1,6 @@
 package metautils.signature
 
-import util.includeIf
+import metautils.util.includeIf
 
 fun ClassSignature.toClassfileName() = typeArguments.toDeclClassfileName() +
         superClass.toClassfileName() + superInterfaces.toClassfileName()

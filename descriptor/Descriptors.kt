@@ -1,7 +1,7 @@
-package descriptor
+package metautils.descriptor
 
-import util.QualifiedName
-import util.toQualifiedName
+import metautils.util.QualifiedName
+import metautils.util.toQualifiedName
 
 // Comes directly from the spec https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.2
 typealias FieldDescriptor = FieldType

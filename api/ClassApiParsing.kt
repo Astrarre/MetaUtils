@@ -9,14 +9,17 @@ import codegeneration.ClassVariant
 import codegeneration.MethodAccess
 import codegeneration.Visibility
 import descriptor.*
+import metautils.descriptor.*
 import metautils.signature.*
+import metautils.util.applyIf
+import metautils.util.toQualifiedName
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
-import signature.fromRawClassString
-import signature.noAnnotations
-import signature.toRawGenericType
+import metautils.signature.fromRawClassString
+import metautils.signature.noAnnotations
+import metautils.signature.toRawGenericType
 import util.*
 import java.nio.file.Path
 

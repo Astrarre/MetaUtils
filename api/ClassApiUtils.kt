@@ -1,13 +1,14 @@
-package api
+package metautils.api
 
+import api.ClassApi
+import api.Visible
 import codegeneration.Public
 import codegeneration.Visibility
 import codegeneration.isAbstract
 import codegeneration.isInterface
-import descriptor.MethodDescriptor
-import descriptor.ObjectType
-import metautils.signature.GenericReturnType
-import signature.*
+import metautils.descriptor.MethodDescriptor
+import metautils.descriptor.ObjectType
+import metautils.signature.*
 
 val ClassApi.isFinal get() = access.isFinal
 val ClassApi.variant get() = access.variant

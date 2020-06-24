@@ -1,8 +1,8 @@
 package metautils.signature
 
-import descriptor.JvmPrimitiveType
-import util.PackageName
-import util.includeIf
+import metautils.descriptor.JvmPrimitiveType
+import metautils.util.PackageName
+import metautils.util.includeIf
 
 
 interface Signature

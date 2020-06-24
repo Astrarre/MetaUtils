@@ -1,17 +1,22 @@
 package codegeneration.asm
 
-import api.AnyJavaType
-import api.JavaReturnType
-import api.JavaType
+import metautils.api.AnyJavaType
+import metautils.api.JavaReturnType
+import metautils.api.JavaType
 import codegeneration.*
 import descriptor.JavaLangObjectJvmType
-import descriptor.MethodDescriptor
-import descriptor.ObjectType
-import descriptor.ReturnDescriptor
+import metautils.codegeneration.asm.AsmClassWriter
+import metautils.descriptor.MethodDescriptor
+import metautils.descriptor.ObjectType
+import metautils.descriptor.ReturnDescriptor
 import metautils.signature.*
+import metautils.util.*
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
-import signature.*
+import metautils.signature.JavaLangObjectGenericType
+import metautils.signature.VoidJavaType
+import metautils.signature.getContainedClassesRecursively
+import metautils.signature.toJvmType
 import util.*
 import java.nio.file.Path
 
@@ -27,10 +32,10 @@ private fun writeClassImpl(
 ): Unit = with(info) {
     val genericsInvolved = typeArguments.isNotEmpty() || superClass?.type?.hasGenericsInvolved() == true
             || superInterfaces.any { it.type.hasGenericsInvolved() }
-    val signature = if (genericsInvolved) ClassSignature(typeArguments = typeArguments.let { if(it.isEmpty()) null else it } ,
-        superClass = superClass?.type ?: JavaLangObjectGenericType,
-        superInterfaces = superInterfaces.map { it.type }
-    ) else null
+    val signature = if (genericsInvolved) ClassSignature(typeArguments = typeArguments.let { if (it.isEmpty()) null else it },
+            superClass = superClass?.type ?: JavaLangObjectGenericType,
+            superInterfaces = superInterfaces.map { it.type }
+        ) else null
 
 
     val classWriter = AsmClassWriter(index)
@@ -50,7 +55,13 @@ private fun writeClassImpl(
             srcRoot,
             info.access.variant.isInterface,
             index
-        ).apply(body).finish()
+        ).apply {
+            body()
+//            if (capturedOuterClass != null) {
+//                // In a double nested class it will probably break
+//                addField(name = "this\$0")
+//            }
+        }.finish()
     }
 
 
@@ -144,6 +155,7 @@ private class AsmGeneratedClass(
     }
 
     override fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
+        if (!isStatic) TODO("Non-static inner classes are not supported by the ASM generator yet")
         val innerClassName = className.innerClass(info.shortName)
         classWriter.trackInnerClass(innerClassName)
         writeClassImpl(info, innerClassName, srcRoot, index)

@@ -1,14 +1,16 @@
 package abstractor
 
-import api.JavaType
-import api.remap
-import descriptor.ReturnDescriptor
-import descriptor.remap
-import metautils.signature.ClassGenericType
-import metautils.signature.GenericReturnType
-import metautils.signature.TypeArgumentDeclaration
-import signature.remap
-import util.*
+import metautils.api.JavaType
+import metautils.api.remap
+import descriptor.*
+import metautils.descriptor.ArrayType
+import metautils.descriptor.JvmType
+import metautils.descriptor.ObjectType
+import metautils.descriptor.ReturnDescriptor
+import metautils.signature.*
+import metautils.util.*
+import metautils.signature.remap
+import metautils.signature.toJvmType
 
 class VersionPackage(private val versionPackage: String) {
     private fun PackageName?.toApiPackageName() = versionPackage.prependToQualified(this ?: PackageName.Empty)
@@ -47,7 +49,14 @@ class VersionPackage(private val versionPackage: String) {
 
     fun <T : ReturnDescriptor> T.remapToApiClass(): T = remap { it.toApiClass() }
     fun <T : GenericReturnType> JavaType<T>.remapToApiClass(): JavaType<T> = remap { it.toApiClass() }
-    fun <T : GenericReturnType> JavaType<T>.remapToBaseClass(): JavaType<T> = remap { it.toBaseClass() }
+//    fun <T : GenericReturnType> JavaType<T>.remapToBaseClass(): JavaType<T> = if(this is ClassGenericType){
+//        remap { it.toBaseClass() }
+//    }
+
+//    fun JavaClassType.remapToBaseClass() : JavaClassType = copy(
+//        type = type.remapTopLevel { it.toBaseClass() }.remapTypeArguments { it.toApiClass() }
+//    )
+
     fun <T : GenericReturnType> T.remapToApiClass(): T = remap { it.toApiClass() }
     fun List<TypeArgumentDeclaration>.remapDeclToApiClasses() = map { typeArg ->
         typeArg.copy(
@@ -62,5 +71,10 @@ class VersionPackage(private val versionPackage: String) {
 
 fun PackageName?.isMcPackage(): Boolean = this?.startsWith("net", "minecraft") == true
 fun QualifiedName.isMcClassName(): Boolean = packageName.isMcPackage()
-fun GenericReturnType.isMcClass(): Boolean = this is ClassGenericType && packageName.isMcPackage()
+fun GenericReturnType.isMcClass(): Boolean = this is ArrayGenericType && componentType.isMcClass() ||
+        this is ClassGenericType && packageName.isMcPackage()
+        || this is TypeVariable && toJvmType().isMcClass()
+
+private fun JvmType.isMcClass(): Boolean = this is ObjectType && fullClassName.isMcClassName()
+        || this is ArrayType && componentType.isMcClass()
 fun JavaType<*>.isMcClass(): Boolean = type.isMcClass()

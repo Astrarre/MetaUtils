@@ -1,8 +1,8 @@
 package codegeneration
 
-import api.*
+import metautils.api.*
 import metautils.signature.TypeArgumentDeclaration
-import util.PackageName
+import metautils.util.PackageName
 import java.nio.file.Path
 
 class ClassInfo(

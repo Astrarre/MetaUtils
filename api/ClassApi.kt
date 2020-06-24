@@ -1,13 +1,13 @@
 package api
 
 import codegeneration.ClassAccess
-import codegeneration.ClassVisibility
 import codegeneration.MethodAccess
 import codegeneration.Visibility
+import metautils.api.*
 import org.objectweb.asm.tree.InnerClassNode
 import metautils.signature.TypeArgumentDeclaration
-import util.QualifiedName
-import util.includeIf
+import metautils.util.QualifiedName
+import metautils.util.includeIf
 
 interface Visible {
     val visibility: Visibility
@@ -48,7 +48,7 @@ data class ClassApi(
     }
 
 
-    data class Method(
+    data class  Method(
         override val name: String,
         val returnType: JavaReturnType,
         val parameters: Map<String, AnyJavaType>,

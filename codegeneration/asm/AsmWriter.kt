@@ -1,16 +1,16 @@
-package codegeneration.asm
+package metautils.codegeneration.asm
 
-import api.JavaAnnotation
+import metautils.api.JavaAnnotation
 import codegeneration.*
 import descriptor.*
+import metautils.descriptor.*
 import metautils.signature.*
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import signature.*
-import util.ClasspathIndex
-import util.QualifiedName
-import util.outerClass
+import metautils.util.ClasspathIndex
+import metautils.util.QualifiedName
+import metautils.util.outerClass
 import util.writeBytes
 import java.nio.file.Path
 

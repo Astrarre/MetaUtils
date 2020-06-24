@@ -1,14 +1,14 @@
-package codegeneration
+package metautils.codegeneration
 
-import api.JavaAnnotation
-import api.JavaType
+import codegeneration.*
+import metautils.api.JavaAnnotation
+import metautils.api.JavaType
 import com.squareup.javapoet.*
-import descriptor.JvmPrimitiveType
-import descriptor.JvmType
-import descriptor.ObjectType
+import metautils.descriptor.JvmPrimitiveType
+import metautils.descriptor.JvmType
+import metautils.descriptor.ObjectType
 import metautils.signature.*
-import signature.*
-import util.prependIfNotNull
+import metautils.util.prependIfNotNull
 
 internal sealed class CodeWriter {
     /**

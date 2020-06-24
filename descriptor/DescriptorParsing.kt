@@ -1,4 +1,4 @@
-package descriptor
+package metautils.descriptor
 
 
 fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
