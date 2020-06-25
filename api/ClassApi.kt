@@ -57,7 +57,7 @@ data class ClassApi(
         val access: MethodAccess
     ) : Member() {
         override fun toString() = "static ".includeIf(isStatic) +
-                "$name(${parameters.map { (name, type) -> "$name: $type" }}): $returnType"
+                "$name(${parameters.map { (name, type) -> "$name: $type" }.joinToString(", ")}): $returnType"
 
         override val isStatic = access.isStatic
         override val visibility = access.visibility

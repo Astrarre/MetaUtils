@@ -53,6 +53,8 @@ fun ClassApi.asType(): JavaClassType = name.toClassGenericType(
 fun ClassApi.asRawType() = asJvmType().toRawJavaType()
 fun ClassApi.asJvmType() = ObjectType(name)
 
+fun ClassApi.isSamInterface() = isInterface && methods.filter { it.isAbstract }.size == 1
+
 
 //fun ClassApi.innerMostClassNameAsType() = ObjectType(
 //    QualifiedName(
