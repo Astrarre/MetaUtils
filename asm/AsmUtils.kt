@@ -33,7 +33,7 @@ val MethodNode.isStaticInitializer get() = name == "<clinit>"
 
 fun AsmNode<*>.hasAnnotation(annotation: String) = annotations.any { it.desc == annotation }
 
-private infix fun Int.opCode(code: Int): Boolean = (this and code) != 0
+ infix fun Int.opCode(code: Int): Boolean = (this and code) != 0
 
 infix fun MethodNode.opCode(code: Int) = access opCode code
 infix fun FieldNode.opCode(code: Int) = access opCode code
@@ -81,6 +81,7 @@ private val Int.protected get() = opCode(Opcodes.ACC_PROTECTED)
 private val Int.public get() = opCode(Opcodes.ACC_PUBLIC)
 private val Int.packagePrivate get() = !private && !protected && !public
 private val Int.final get() = opCode(Opcodes.ACC_FINAL)
+private val Int.synthetic get() = opCode(Opcodes.ACC_SYNTHETIC)
 private val Int.visibility: Visibility
     get() = when {
         private -> Visibility.Private
@@ -98,6 +99,7 @@ val MethodNode.isProtected get() = access.protected
 val MethodNode.isPublic get() = access.public
 val MethodNode.isPackagePrivate get() = access.packagePrivate
 val MethodNode.visibility: Visibility get() = access.visibility
+val MethodNode.isSynthetic: Boolean get() = access.synthetic
 
 val FieldNode.isStatic get() = access.static
 val FieldNode.isPrivate get() = access.private

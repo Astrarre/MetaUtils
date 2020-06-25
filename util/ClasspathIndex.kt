@@ -9,12 +9,14 @@ import util.*
 import java.lang.reflect.Method
 import java.nio.file.Path
 
-data class MethodEntry(val name: String, val descriptor: String) {
-    val descriptorParsed = lazy { MethodDescriptor.read(descriptor) }
+data class MethodEntry(val id: MethodIdentifier, val access: Int) {
+    val descriptorParsed = lazy { MethodDescriptor.read(id.descriptor) }
 }
 
+data class MethodIdentifier(val name: String, val descriptor: String)
+
 data class ClassEntry(
-    val methods: Set<MethodEntry>,
+    val methods: Map<MethodIdentifier, MethodEntry>,
     val superClass: QualifiedName?,
     val superInterfaces: List<QualifiedName>,
     val access: Int,
@@ -42,8 +44,10 @@ data class ClasspathIndex(private val classes: Map<QualifiedName, ClassEntry>) {
         jdkClassesCache.computeIfAbsent(className) {
             val clazz = Class.forName(className.toDotQualifiedString())
             ClassEntry(
-                methods = clazz.methods.map { MethodEntry(it.name, getMethodDescriptor(it)) }
-                    .toSet(),
+                methods = clazz.methods.map {
+                    val id = MethodIdentifier(it.name, getMethodDescriptor(it))
+                    id to MethodEntry(id, it.modifiers)
+                }.toMap(),
                 superInterfaces = clazz.interfaces.map { it.name.toQualifiedName(dotQualified = true) },
                 superClass = clazz.superclass?.name?.toQualifiedName(dotQualified = true),
                 access = clazz.modifiers, // I think this is the same
@@ -56,13 +60,18 @@ data class ClasspathIndex(private val classes: Map<QualifiedName, ClassEntry>) {
     }
 
 
-    fun classHasMethod(className: QualifiedName, methodName: String, methodDescriptor: MethodDescriptor): Boolean {
-        return getClassEntry(className).methods.contains(
-            MethodEntry(
-                methodName,
-                methodDescriptor.classFileName
-            )
-        )
+//    fun classHasMethod(className: QualifiedName, methodName: String, methodDescriptor: MethodDescriptor): Boolean {
+//        return getClassEntry(className).methods.contains(
+//            MethodEntry(
+//                methodName,
+//                methodDescriptor.classFileName,
+//                access = 0 // Access is not taken into account in equality
+//            )
+//        )
+//    }
+
+    fun getMethod(className: QualifiedName, methodName: String, methodDescriptor: MethodDescriptor): MethodEntry? {
+        return getClassEntry(className).methods[MethodIdentifier(methodName, methodDescriptor.classFileName)]
     }
 
     fun accessOf(className: QualifiedName) = getClassEntry(className).access
@@ -132,7 +141,10 @@ fun indexClasspath(classPath: List<Path>, additionalEntries: Map<QualifiedName, 
         getClasses(path).map { classNode ->
             val name = classNode.name.toQualifiedName(dotQualified = false)
             name to ClassEntry(
-                methods = classNode.methods.map { MethodEntry(it.name, it.desc) }.toHashSet(),
+                methods = classNode.methods.map {
+                    val id = MethodIdentifier(it.name, it.desc)
+                    id to MethodEntry(id, it.access)
+                }.toMap(),
                 superClass = classNode.superName.toQualifiedName(dotQualified = false),
                 superInterfaces = classNode.interfaces.map { it.toQualifiedName(dotQualified = false) },
                 access = classNode.access,

@@ -90,7 +90,8 @@ private fun readSingularClass(
     val classTypeArgMap = (signature.typeArguments?.map { it.name to it }?.toMap() ?: mapOf()) +
             nonStaticOuterClassTypeArgs
 
-    val methods = classNode.methods.map { readMethod(it, classNode, classTypeArgs = classTypeArgMap) }
+    val methods = classNode.methods.filter { !it.isSynthetic }
+        .map { readMethod(it, classNode, classTypeArgs = classTypeArgMap) }
     val fields = classNode.fields.map { readField(it, classTypeArgs = classTypeArgMap) }
 
     val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
