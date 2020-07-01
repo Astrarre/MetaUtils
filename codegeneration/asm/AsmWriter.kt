@@ -11,7 +11,7 @@ import org.objectweb.asm.Opcodes
 import metautils.util.ClasspathIndex
 import metautils.util.QualifiedName
 import metautils.util.outerClass
-import util.writeBytes
+import metautils.util.writeBytes
 import java.nio.file.Path
 
 private fun MethodSignature.visitNames(visitor: (QualifiedName) -> Unit) {

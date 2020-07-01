@@ -10,6 +10,7 @@ import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.ObjectType
 import metautils.signature.*
 import metautils.util.ClasspathIndex
+import metautils.util.applyIf
 import metautils.util.toQualifiedName
 
 val ClassApi.isFinal get() = access.isFinal
@@ -39,10 +40,6 @@ private inline fun ClassApi.visitThisAndOuterClasses(visitor: (ClassApi) -> Unit
     visitor(this)
     if (outerClass != null) visitor(outerClass)
 }
-//private fun ClassApi.addToInnerClassChain(accumulated: MutableList<ClassApi>) {
-//    accumulated.add(this)
-//    outerClass?.value?.addToInnerClassChain(accumulated)
-//}
 
 val ClassApi.Method.isVoid get() = returnType.type == GenericReturnType.Void
 fun ClassApi.asType(): JavaClassType = name.toClassGenericType(
@@ -60,12 +57,11 @@ fun ClassApi.isThrowable(index: ClasspathIndex) = index.doesClassEventuallyExten
 private val ThrowableName = "java/lang/Throwable".toQualifiedName(dotQualified = false)
 
 
-//fun ClassApi.innerMostClassNameAsType() = ObjectType(
-//    QualifiedName(
-//        packageName = null,
-//        shortName = ShortClassName(listOf(name.shortName.innermostClass()))
-//    )
-//).toRawJavaType()
+fun ClassApi.getSignature(): ClassSignature = ClassSignature(
+    typeArguments.applyIf<List<TypeArgumentDeclaration>?>(typeArguments.isEmpty()) { null },
+    superClass?.type ?: JavaLangObjectGenericType,
+    superInterfaces.map { it.type }
+)
 
 fun ClassApi.visitThisAndInnerClasses(visitor: (ClassApi) -> Unit) {
     visitor(this)

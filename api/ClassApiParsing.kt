@@ -11,8 +11,6 @@ import codegeneration.Visibility
 import descriptor.*
 import metautils.descriptor.*
 import metautils.signature.*
-import metautils.util.applyIf
-import metautils.util.toQualifiedName
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
@@ -20,7 +18,7 @@ import org.objectweb.asm.tree.MethodNode
 import metautils.signature.fromRawClassString
 import metautils.signature.noAnnotations
 import metautils.signature.toRawGenericType
-import util.*
+import metautils.util.*
 import java.nio.file.Path
 
 fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {

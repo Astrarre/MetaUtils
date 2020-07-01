@@ -5,8 +5,8 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.*
-import util.inputStream
-import util.writeBytes
+import metautils.util.inputStream
+import metautils.util.writeBytes
 import java.nio.file.Path
 
 

@@ -5,7 +5,6 @@ import descriptor.JavaLangObjectName
 import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.read
 import org.objectweb.asm.tree.ClassNode
-import util.*
 import java.lang.reflect.Method
 import java.nio.file.Path
 

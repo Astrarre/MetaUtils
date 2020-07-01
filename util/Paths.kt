@@ -1,6 +1,7 @@
-package util
+package metautils.util
 
 import java.io.InputStream
+import java.nio.charset.Charset
 import java.nio.file.*
 import java.util.jar.JarOutputStream
 import kotlin.streams.asSequence
@@ -21,6 +22,8 @@ fun Path.createDirectories(): Path = Files.createDirectories(this)
 fun Path.createParentDirectories(): Path = parent.createDirectories()
 fun Path.inputStream(): InputStream = Files.newInputStream(this)
 fun Path.writeBytes(bytes: ByteArray): Path = Files.write(this, bytes)
+fun Path.writeString(str : String): Path = Files.write(this, str.toByteArray())
+fun Path.readToString() = Files.readAllBytes(this).toString(Charset.defaultCharset())
 inline fun openJars(jar1: Path, jar2: Path, jar3: Path, usage: (FileSystem, FileSystem, FileSystem) -> Unit) =
     jar1.openJar { j1 -> jar2.openJar { j2 -> jar3.openJar { j3 -> usage(j1, j2, j3) } } }
 
@@ -65,7 +68,7 @@ fun Path.copyTo(target: Path, overwrite: Boolean = true): Path? {
 }
 
 //fun getJvmBootClasses(): List<Path> = if (System.getProperty("java.version").toInt() <= 8) {
-//    System.getProperty("sun.boot.class.path").split(';').map { it.metautils.util.toPath() }
+//    System.getProperty("sun.boot.class.path").split(';').map { it.metautils.metautils.util.toPath() }
 //} else listOf<Path>() // It's part of class.path in jdk9+
 
 fun String.toPath(): Path = Paths.get(this)

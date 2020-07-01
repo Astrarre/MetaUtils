@@ -18,7 +18,6 @@ import metautils.signature.JavaLangObjectGenericType
 import metautils.signature.VoidJavaType
 import metautils.signature.getContainedClassesRecursively
 import metautils.signature.toJvmType
-import util.*
 import java.nio.file.Path
 
 

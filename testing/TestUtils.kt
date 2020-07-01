@@ -1,6 +1,6 @@
 package metautils.testing
 
-import util.*
+import metautils.util.*
 import java.io.File
 import java.net.URLClassLoader
 import java.nio.file.Path
