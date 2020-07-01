@@ -17,6 +17,7 @@ class VersionPackage(private val versionPackage: String) {
     private fun ShortClassName.toApiShortClassName() =
         ShortClassName(("I" + outerMostClass()).prependTo(innerClasses()))
 
+
 //    fun String.remapToApiClass(dotQualified : Boolean = false, dollarQualified : Boolean = true) =
 //        toQualifiedName(dotQualified, dollarQualified).toApiClass().toString(dotQualified, dollarQualified)
 
@@ -33,12 +34,22 @@ class VersionPackage(private val versionPackage: String) {
 //    private fun ShortClassName.toBaseApiShortClassName() =
 //        ShortClassName(("IBase" + outerMostClass()).prependTo(innerClasses()))
 
-    fun QualifiedName.toBaseClass(): QualifiedName = if (isMcClassName()) {
+    fun QualifiedName.toBaseClass(): QualifiedName =
         QualifiedName(
             packageName = packageName.toApiPackageName(),
             shortName = shortName.toBaseShortClassName()
         )
-    } else this
+
+//
+//    private fun ShortClassName.toExceptionSuperShortClassName() =
+//        ShortClassName(("E" + outerMostClass()).prependTo(innerClasses()))
+//
+//
+//    fun QualifiedName.toExceptionSuperClass(): QualifiedName = QualifiedName(
+//        packageName = packageName.toApiPackageName(),
+//        shortName = shortName.toExceptionSuperShortClassName()
+//    )
+
 
 //    fun QualifiedName.toBaseApiInterface(): QualifiedName = if (isMcClassName()) {
 //        QualifiedName(
@@ -77,4 +88,5 @@ fun GenericReturnType.isMcClass(): Boolean = this is ArrayGenericType && compone
 
 private fun JvmType.isMcClass(): Boolean = this is ObjectType && fullClassName.isMcClassName()
         || this is ArrayType && componentType.isMcClass()
+
 fun JavaType<*>.isMcClass(): Boolean = type.isMcClass()

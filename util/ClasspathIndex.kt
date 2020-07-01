@@ -98,6 +98,28 @@ data class ClasspathIndex(private val classes: Map<QualifiedName, ClassEntry>) {
         return (getSuperTypesRecursivelyImpl(className) + JavaLangObjectName).toSet()
     }
 
+    fun doesClassEventuallyExtend(extendingClass: QualifiedName, extendedClass: QualifiedName) : Boolean {
+        return extendedClass in getSuperClassesRecursively(extendingClass)
+    }
+
+    fun getSuperClassesRecursively(className: QualifiedName): List<QualifiedName> {
+        val superClasses = mutableListOf<QualifiedName>()
+        val entry = getClassEntry(className)
+        if (entry.superClass != null) {
+            addSuperClasses(entry.superClass, superClasses)
+        }
+        superClasses.add(JavaLangObjectName)
+        return superClasses
+    }
+
+    private fun addSuperClasses(className: QualifiedName, otherSuperClasses: MutableList<QualifiedName>) {
+        val entry = getClassEntry(className)
+        otherSuperClasses.add(entry.name)
+        if (entry.superClass != null) {
+            addSuperClasses(entry.superClass, otherSuperClasses)
+        }
+    }
+
     private fun getSuperTypesRecursivelyImpl(className: QualifiedName): List<QualifiedName> {
         val directSupers = getClassEntry(className).directSuperTypes
         return (directSupers + directSupers.filter { it != JavaLangObjectName }

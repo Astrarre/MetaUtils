@@ -9,6 +9,8 @@ import codegeneration.isInterface
 import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.ObjectType
 import metautils.signature.*
+import metautils.util.ClasspathIndex
+import metautils.util.toQualifiedName
 
 val ClassApi.isFinal get() = access.isFinal
 val ClassApi.variant get() = access.variant
@@ -54,6 +56,8 @@ fun ClassApi.asRawType() = asJvmType().toRawJavaType()
 fun ClassApi.asJvmType() = ObjectType(name)
 
 fun ClassApi.isSamInterface() = isInterface && methods.filter { it.isAbstract }.size == 1
+fun ClassApi.isThrowable(index: ClasspathIndex) = index.doesClassEventuallyExtend(name, ThrowableName)
+private val ThrowableName = "java/lang/Throwable".toQualifiedName(dotQualified = false)
 
 
 //fun ClassApi.innerMostClassNameAsType() = ObjectType(
