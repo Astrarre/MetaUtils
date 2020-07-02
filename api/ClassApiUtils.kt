@@ -53,7 +53,7 @@ fun ClassApi.asRawType() = asJvmType().toRawJavaType()
 fun ClassApi.asJvmType() = ObjectType(name)
 
 fun ClassApi.isSamInterface() = isInterface && methods.filter { it.isAbstract }.size == 1
-fun ClassApi.isThrowable(index: ClasspathIndex) = index.doesClassEventuallyExtend(name, ThrowableName)
+//fun ClassApi.isThrowable(index: ClasspathIndex) = index.doesClassEventuallyExtend(name, ThrowableName)
 private val ThrowableName = "java/lang/Throwable".toQualifiedName(dotQualified = false)
 
 
