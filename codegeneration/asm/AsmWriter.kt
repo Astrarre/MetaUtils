@@ -169,10 +169,12 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
 
     inner class ClassBody {
         fun trackInnerClass(name: QualifiedName) = name.track()
+        //TODO: parameter names
         fun writeMethod(
             name: String,
             access: MethodAccess,
             descriptor: MethodDescriptor,
+            parameterNames: List<String>,
             signature: MethodSignature?,
             annotations: List<JavaAnnotation>,
             parameterAnnotations: Map<Int, List<JavaAnnotation>>,
@@ -191,6 +193,8 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
                 name, descriptor.classFileName, signature?.toClassfileName(),
                 throws.map { it.toJvmString() }.toTypedArray()
             )
+
+            parameterNames.forEach { methodWriter.visitParameter(it,0) }
 
             for (annotation in annotations) {
                 methodWriter.visitAnnotation(annotation.type.classFileName, false).visitEnd()

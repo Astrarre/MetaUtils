@@ -7,6 +7,8 @@ import codegeneration.*
 import descriptor.JavaLangObjectJvmType
 import metautils.codegeneration.*
 import metautils.codegeneration.asm.AsmClassWriter
+import metautils.codegeneration.asm.AsmGeneratedMethod
+import metautils.codegeneration.asm.ConstructorsName
 import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.ObjectType
 import metautils.descriptor.ReturnDescriptor
@@ -27,6 +29,9 @@ private fun GenericReturnType.hasGenericsInvolved() = this is TypeVariable
 internal fun JavaReturnType.asmType(): Type = toJvmType().asmType()
 internal fun ReturnDescriptor.asmType(): Type = Type.getType(classFileName)
 
+
+//private
+
 private fun writeClassImpl(
     info: ClassInfo, className: QualifiedName, srcRoot: Path, index: ClasspathIndex
 ): Unit = with(info) {
@@ -42,7 +47,6 @@ private fun writeClassImpl(
 
     classWriter.writeClass(
         access, visibility, className,
-        //TODO: investigate if we can trick the IDE to think the original source file is the mc source file
         sourceFile = className.shortName.outerMostClass() + ".java",
         signature = signature,
         superClass = superClass?.toJvmType() ?: JavaLangObjectJvmType,
@@ -128,7 +132,7 @@ private class AsmGeneratedClass(
         if (staticFieldInitializers.isNotEmpty()) {
             val staticInitializer = MethodInfo(
                 visibility = Visibility.Package,
-                parameters = mapOf(),
+                parameters = listOf(),
                 throws = listOf()
             ) {
                 for ((targetField, fieldValue) in this@AsmGeneratedClass.staticFieldInitializers) {
@@ -193,7 +197,7 @@ private class AsmGeneratedClass(
         } else null
 
         classWriter.writeMethod(
-            name, access, descriptor, signature,
+            name, access, descriptor,parameterNames = parameters.keys, signature =  signature,
             annotations = returnType.annotations,
             parameterAnnotations = parameters.values
                 .mapIndexed { i, paramType -> i to paramType.annotations }.toMap(),
@@ -203,7 +207,7 @@ private class AsmGeneratedClass(
                 AbstractGeneratedMethod.apply(bodyPrefix).apply(body)
             } else {
                 val builder = AsmGeneratedMethod(this, name, access.isStatic,
-                    parameters.mapValues { (_, type) -> type.toJvmType() }).apply(bodyPrefix).apply(body)
+                    parameters.map { (name, type) -> name to type.toJvmType() }).apply(bodyPrefix).apply(body)
 
                 // This assumes extremely simplistic method calls that just call one method and that's it
                 writeZeroOperandInstruction(returnType.asmType().getOpcode(Opcodes.IRETURN))

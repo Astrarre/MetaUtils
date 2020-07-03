@@ -33,7 +33,7 @@ fun Path.recursiveChildren() = Files.walk(this).asSequence()
 fun Path.hasExtension(extension: String) = toString().endsWith(extension)
 
 fun Path.unzipJar(
-    destination: Path = parent.resolve(fileName.toString().removeSuffix(".jar")),
+    destination: Path = toAbsolutePath().parent.resolve(fileName.toString().removeSuffix(".jar")),
     overwrite: Boolean = true
 ): Path {
     if (overwrite) destination.deleteRecursively()

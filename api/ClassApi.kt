@@ -51,7 +51,7 @@ data class ClassApi(
     data class  Method(
         override val name: String,
         val returnType: JavaReturnType,
-        val parameters: Map<String, AnyJavaType>,
+        val parameters: List<Pair<String, AnyJavaType>>,
         val typeArguments: List<TypeArgumentDeclaration>,
         val throws: List<JavaThrowableType>,
         val access: MethodAccess

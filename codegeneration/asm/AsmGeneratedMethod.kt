@@ -1,9 +1,9 @@
-package codegeneration.asm
+package metautils.codegeneration.asm
 
 import codegeneration.*
+import codegeneration.asm.asmType
 import descriptor.*
 import metautils.codegeneration.GeneratedMethod
-import metautils.codegeneration.asm.AsmClassWriter
 import metautils.descriptor.JvmType
 import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.ObjectType
@@ -18,7 +18,7 @@ private const val printStackOps = false
 private class JvmState(
     private val methodName: String,
     private val methodStatic: Boolean,
-    parameters: Map<String, JvmType>
+    parameters: List<Pair<String,JvmType>>
 ) {
     fun maxStackSize(): Int {
         if (currentStack != 0) error("$currentStack element(s) on the stack were not used yet")
@@ -34,7 +34,7 @@ private class JvmState(
         return type
     }
 
-    private val lvTable: MutableMap<String, JvmLocalVariable> = parameters.entries.mapIndexed { i, (name, type) ->
+    private val lvTable: MutableMap<String, JvmLocalVariable> = parameters.mapIndexed { i, (name, type) ->
         name to JvmLocalVariable(i.applyIf(!methodStatic) { it + 1 }, type)
     }.toMap().toMutableMap()
 
@@ -79,7 +79,7 @@ internal class AsmGeneratedMethod(
     private val methodWriter: AsmClassWriter.MethodBody,
     name: String,
     isStatic: Boolean,
-    parameters: Map<String, JvmType>
+    parameters: List<Pair<String,JvmType>>
 ) : GeneratedMethod {
     fun maxStackSize(): Int = state.maxStackSize()
 

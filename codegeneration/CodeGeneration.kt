@@ -25,7 +25,7 @@ class ClassInfo(
 
 data class MethodInfo(
     val visibility: Visibility,
-    val parameters: Map<String, AnyJavaType>,
+    val parameters: List<Pair<String, AnyJavaType>>,
     val throws: List<JavaThrowableType>,
     val body: GeneratedMethod.() -> Unit
 )
@@ -70,7 +70,7 @@ interface GeneratedMethod {
 
 fun GeneratedClass.addMethod(
     visibility: Visibility,
-    parameters: Map<String, AnyJavaType>,
+    parameters: List<Pair<String, AnyJavaType>>,
     throws: List<JavaThrowableType>,
     static: Boolean,
     final: Boolean,

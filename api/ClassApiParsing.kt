@@ -213,7 +213,7 @@ private fun readMethod(
                         method.invisibleParameterAnnotations?.get(index)
                     )
                 )
-            }.toMap(),
+            },
         throws = signature.throwsSignatures.map { it.noAnnotations() },
         access = MethodAccess(
             isStatic = method.isStatic,

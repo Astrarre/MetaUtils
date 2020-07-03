@@ -9,8 +9,8 @@ fun <T> T.applyIf(boolean: Boolean, apply: (T) -> T): T {
     return if (boolean) apply(this) else this
 }
 
-fun <T, U> T.ifNotNull(obj : U?, apply: (T,U) -> T) : T {
-    return if (obj != null) apply(this,obj) else this
+fun <T, U> T.ifNotNull(obj: U?, apply: (T, U) -> T): T {
+    return if (obj != null) apply(this, obj) else this
 }
 
 
@@ -27,6 +27,7 @@ fun <T : Any?> T.prependTo(list: List<T>): List<T> {
 
 val <K, V> List<Pair<K, V>>.keys get() = map { it.first }
 val <K, V> List<Pair<K, V>>.values get() = map { it.second }
+fun <K, V> List<Pair<K, V>>.mapValues(mapper: (V) -> V) = map { (k, v) -> k to mapper(v) }
 
 inline fun <T> recursiveList(seed: T?, getter: (T) -> T?): List<T> {
     val list = mutableListOf<T>()
