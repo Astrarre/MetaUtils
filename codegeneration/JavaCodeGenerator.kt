@@ -11,11 +11,7 @@ import metautils.util.PackageName
 import java.nio.file.Path
 import javax.lang.model.element.Modifier
 
-@DslMarker
-annotation class CodeGeneratorDsl
 
-
-@CodeGeneratorDsl
 object JavaCodeGenerator : CodeGenerator {
 
     override fun writeClass(
@@ -27,7 +23,7 @@ object JavaCodeGenerator : CodeGenerator {
         JavaFile.builder(
             packageName?.toDotQualified() ?: "",
             generatedClass.build()
-        ).skipJavaLangImports(true). build().writeTo(srcRoot)
+        ).skipJavaLangImports(true).build().writeTo(srcRoot)
     }
 
 
@@ -39,6 +35,7 @@ private fun generateClass(info: ClassInfo): TypeSpec.Builder = with(info) {
     builder.apply {
         visibility.toModifier()?.let { addModifiers(it) }
         if (access.variant.isAbstract) addModifiers(Modifier.ABSTRACT)
+        if (access.isFinal) addModifiers(Modifier.FINAL)
         if (superClass != null) superclass(superClass.toTypeName())
         for (superInterface in superInterfaces) addSuperinterface(superInterface.toTypeName())
         addTypeVariables(typeArguments.map { it.toTypeName() })
@@ -63,7 +60,6 @@ private fun generateMethod(info: MethodInfo, name: String?): MethodSpec.Builder 
 
 }
 
-@CodeGeneratorDsl
 class JavaGeneratedClass(
     private val typeSpec: TypeSpec.Builder,
     private val isInterface: Boolean
@@ -135,13 +131,16 @@ class JavaGeneratedClass(
         )
     }
 
+    override fun addJavadoc(comment: String) {
+        typeSpec.addJavadoc(comment)
+    }
+
 
 }
 
 private fun List<JavaType<*>>.toTypeNames() = map { it.toTypeName() }.toTypedArray()
 
 
-@CodeGeneratorDsl
 class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) : GeneratedMethod {
 
     override fun addStatement(statement: Statement) {

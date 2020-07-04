@@ -30,7 +30,6 @@ data class MethodInfo(
     val body: GeneratedMethod.() -> Unit
 )
 
-@CodeGeneratorDsl
 interface CodeGenerator {
     fun writeClass(
         info: ClassInfo,
@@ -39,7 +38,6 @@ interface CodeGenerator {
     )
 }
 
-@CodeGeneratorDsl
 interface GeneratedClass {
     fun addMethod(
         methodInfo: MethodInfo,
@@ -59,9 +57,9 @@ interface GeneratedClass {
         isFinal: Boolean,
         initializer: Expression?
     )
+    fun addJavadoc(comment: String)
 }
 
-@CodeGeneratorDsl
 interface GeneratedMethod {
     fun addStatement(statement: Statement)
     fun addComment(comment: String)

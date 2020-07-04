@@ -256,6 +256,10 @@ private class AsmGeneratedClass(
         }
     }
 
+    override fun addJavadoc(comment: String) {
+
+    }
+
 }
 
 

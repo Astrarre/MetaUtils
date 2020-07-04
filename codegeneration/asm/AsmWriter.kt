@@ -169,7 +169,6 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
 
     inner class ClassBody {
         fun trackInnerClass(name: QualifiedName) = name.track()
-        //TODO: parameter names
         fun writeMethod(
             name: String,
             access: MethodAccess,
