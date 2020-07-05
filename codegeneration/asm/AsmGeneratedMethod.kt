@@ -232,7 +232,7 @@ internal class AsmGeneratedMethod(
         statement.addOpcodes()
     }
 
-    override fun addComment(comment: String) {
+    override fun addJavadoc(comment: String) {
     }
 
 }

@@ -25,6 +25,14 @@ fun <T : Any?> T.prependTo(list: List<T>): List<T> {
     return appendedList
 }
 
+fun <T, R> Iterable<T>.flatMapNotNull(mapping: (T) -> Iterable<R?>): List<R> {
+    val list = mutableListOf<R>()
+    for (element in this) {
+        mapping(element).forEach { if (it != null) list.add(it) }
+    }
+    return list
+}
+
 val <K, V> List<Pair<K, V>>.keys get() = map { it.first }
 val <K, V> List<Pair<K, V>>.values get() = map { it.second }
 fun <K, V> List<Pair<K, V>>.mapValues(mapper: (V) -> V) = map { (k, v) -> k to mapper(v) }

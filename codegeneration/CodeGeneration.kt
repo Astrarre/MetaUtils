@@ -25,11 +25,17 @@ class ClassInfo(
 
 data class MethodInfo(
     val visibility: Visibility,
-    val parameters: List<Pair<String, AnyJavaType>>,
+    val parameters: List<ParameterInfo>,
     val throws: List<JavaThrowableType>,
     val body: GeneratedMethod.() -> Unit
 )
 
+data class ParameterInfo(val name: String, val type: AnyJavaType, val javadoc: String?)
+
+@DslMarker
+annotation class CodeGenerationDsl
+
+@CodeGenerationDsl
 interface CodeGenerator {
     fun writeClass(
         info: ClassInfo,
@@ -37,7 +43,7 @@ interface CodeGenerator {
         srcRoot: Path
     )
 }
-
+@CodeGenerationDsl
 interface GeneratedClass {
     fun addMethod(
         methodInfo: MethodInfo,
@@ -57,18 +63,19 @@ interface GeneratedClass {
         isFinal: Boolean,
         initializer: Expression?
     )
+
     fun addJavadoc(comment: String)
 }
-
+@CodeGenerationDsl
 interface GeneratedMethod {
     fun addStatement(statement: Statement)
-    fun addComment(comment: String)
+    fun addJavadoc(comment: String)
 }
 
 
 fun GeneratedClass.addMethod(
     visibility: Visibility,
-    parameters: List<Pair<String, AnyJavaType>>,
+    parameters: List<ParameterInfo>,
     throws: List<JavaThrowableType>,
     static: Boolean,
     final: Boolean,

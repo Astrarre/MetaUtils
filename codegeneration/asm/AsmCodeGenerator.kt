@@ -189,18 +189,18 @@ private class AsmGeneratedClass(
         name: String,
         bodyPrefix: GeneratedMethod.() -> Unit = {}
     ) {
-        val descriptor = MethodDescriptor(parameters.values.map { it.toJvmType() }, returnType.toJvmType())
-        val genericsInvolved = typeArguments.isNotEmpty() || parameters.values.any { it.type.hasGenericsInvolved() }
+        val descriptor = MethodDescriptor(parameters.map { it.type.toJvmType() }, returnType.toJvmType())
+        val genericsInvolved = typeArguments.isNotEmpty() || parameters.any { it.type.type.hasGenericsInvolved() }
                 || returnType.type.hasGenericsInvolved()
         val signature = if (genericsInvolved) {
-            MethodSignature(typeArguments, parameters.values.generics(), returnType.type, throws.generics())
+            MethodSignature(typeArguments, parameters.map { it.type.type }, returnType.type, throws.generics())
         } else null
 
         classWriter.writeMethod(
-            name, access, descriptor,parameterNames = parameters.keys, signature =  signature,
+            name, access, descriptor,parameterNames = parameters.map { it.name }, signature =  signature,
             annotations = returnType.annotations,
-            parameterAnnotations = parameters.values
-                .mapIndexed { i, paramType -> i to paramType.annotations }.toMap(),
+            parameterAnnotations = parameters
+                .mapIndexed { i, (_,paramType,_) -> i to paramType.annotations }.toMap(),
             throws = throws.map { it.toJvmType() }
         ) {
             if (access.isAbstract) {
@@ -268,7 +268,7 @@ object AbstractGeneratedMethod : GeneratedMethod {
         error("Method is abstract")
     }
 
-    override fun addComment(comment: String) {
+    override fun addJavadoc(comment: String) {
         error("Method is abstract")
     }
 

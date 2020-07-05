@@ -49,9 +49,10 @@ private fun generateMethod(info: MethodInfo, name: String?): MethodSpec.Builder 
     val builder = if (name != null) MethodSpec.methodBuilder(name) else MethodSpec.constructorBuilder()
     builder.apply {
         JavaGeneratedMethod(this).apply(body)
-        addParameters(info.parameters.map { (name, type) ->
+        addParameters(info.parameters.map { (name, type, javadoc) ->
             ParameterSpec.builder(type.toTypeName(), name).apply {
                 addAnnotations(type.annotations.map { it.toAnnotationSpec() })
+                if (javadoc != null) addJavadoc(javadoc)
             }.build()
         })
         addExceptions(throws.map { it.toTypeName() })
@@ -148,8 +149,8 @@ class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) : Generate
         methodSpec.addStatement(format, *arguments.toTypeNames())
     }
 
-    override fun addComment(comment: String) {
-        methodSpec.addComment(comment)
+    override fun addJavadoc(comment: String) {
+        methodSpec.addJavadoc(comment)
     }
 
 }
