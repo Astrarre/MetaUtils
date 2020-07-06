@@ -1,8 +1,10 @@
 package metautils.api
 
+import metautils.descriptor.JvmType
 import metautils.descriptor.ObjectType
 import metautils.signature.*
 import metautils.util.QualifiedName
+import org.objectweb.asm.AnnotationVisitor
 
 
 // This is actually not a complete representation of java type since it doesn't have annotations in type arguments,
@@ -17,9 +19,24 @@ typealias AnyJavaType = JavaType<GenericTypeOrPrimitive>
 typealias JavaReturnType = JavaType<GenericReturnType>
 typealias JavaThrowableType = JavaType<ThrowableType>
 
-//soft to do: annotations theoretically can also have values
-data class JavaAnnotation(val type: ObjectType/*, val parameters : Map<String, >*/) {
+data class JavaAnnotation(val type: ObjectType, val parameters : Map<String, AnnotationValue>) {
     override fun toString(): String = "@$type"
+}
+
+sealed class AnnotationValue {
+    class Array(val components: List<AnnotationValue>) : AnnotationValue()
+    class Annotation(val annotation: JavaAnnotation) : AnnotationValue()
+    sealed class Primitive : AnnotationValue() {
+        abstract val primitive: Any
+
+        class Num(override val primitive: Number) : Primitive()
+        class Bool(override val primitive: Boolean) : Primitive()
+        class Cha(override val primitive: Char) : Primitive()
+        class Str(override val primitive: String) : Primitive()
+    }
+
+    class Enum(val type: QualifiedName, val constant: String) : AnnotationValue()
+    class ClassType(val type: JvmType) : AnnotationValue()
 }
 
 fun <T : GenericReturnType> JavaType<T>.remap(mapper: (className: QualifiedName) -> QualifiedName?) =

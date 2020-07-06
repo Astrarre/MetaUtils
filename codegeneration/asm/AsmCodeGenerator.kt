@@ -1,17 +1,11 @@
-package codegeneration.asm
+package metautils.codegeneration.asm
 
 import metautils.api.AnyJavaType
 import metautils.api.JavaReturnType
 import metautils.api.JavaType
 import codegeneration.*
-import descriptor.JavaLangObjectJvmType
 import metautils.codegeneration.*
-import metautils.codegeneration.asm.AsmClassWriter
-import metautils.codegeneration.asm.AsmGeneratedMethod
-import metautils.codegeneration.asm.ConstructorsName
-import metautils.descriptor.MethodDescriptor
-import metautils.descriptor.ObjectType
-import metautils.descriptor.ReturnDescriptor
+import metautils.descriptor.*
 import metautils.signature.*
 import metautils.util.*
 import org.objectweb.asm.Opcodes
@@ -206,12 +200,12 @@ private class AsmGeneratedClass(
             if (access.isAbstract) {
                 AbstractGeneratedMethod.apply(bodyPrefix).apply(body)
             } else {
-                val builder = AsmGeneratedMethod(this, name, access.isStatic,
+                val builder = AsmGeneratedMethod(this,returnType.toJvmType(), name, access.isStatic,
                     parameters.map { (name, type) -> name to type.toJvmType() }).apply(bodyPrefix).apply(body)
 
                 // This assumes extremely simplistic method calls that just call one method and that's it
                 writeZeroOperandInstruction(returnType.asmType().getOpcode(Opcodes.IRETURN))
-                val localVarSize = parameters.size.applyIf(!access.isStatic) { it + 1 }
+                val localVarSize = parameters.sumBy { it.type.toJvmType().byteWidth() }.applyIf(!access.isStatic) { it + 1 }
                 val stackSize = builder.maxStackSize()
                 setMaxStackAndVariablesSize(stackSize, localVarSize)
             }

@@ -1,4 +1,4 @@
-package asm
+package metautils.asm
 
 import codegeneration.*
 import org.objectweb.asm.ClassReader

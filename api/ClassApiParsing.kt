@@ -3,12 +3,11 @@
 package metautils.api
 
 import api.*
-import asm.*
 import codegeneration.ClassAccess
 import codegeneration.ClassVariant
 import codegeneration.MethodAccess
 import codegeneration.Visibility
-import descriptor.*
+import metautils.asm.*
 import metautils.descriptor.*
 import metautils.signature.*
 import org.objectweb.asm.tree.AnnotationNode
@@ -21,14 +20,14 @@ import metautils.signature.toRawGenericType
 import metautils.util.*
 import java.nio.file.Path
 
-fun ClassApi.Companion.readFromJar(jarPath: Path): Collection<ClassApi> {
+fun ClassApi.Companion.readFromJar(jarPath: Path, filter: (Path) -> Boolean): Collection<ClassApi> {
     require(jarPath.hasExtension(".jar")) { "Specified path $jarPath does not point to a jar" }
 
     // Only pass top-level classes into readSingularClass()
 
     return jarPath.openJar { jar ->
         val root = jar.getPath("/")
-        root.walk().asSequence().readFromSequence(root)
+        root.walk().asSequence().filter(filter).readFromSequence(root)
     }
 }
 
@@ -148,8 +147,48 @@ private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<Ann
         else -> visible + invisible
     }
     combined ?: return listOf()
-    return combined.map { JavaAnnotation(FieldType.read(it.desc) as ObjectType) }
+    return combined.map { parseAnnotation(it) }
 }
+
+private fun parseAnnotation(node: AnnotationNode) =
+    JavaAnnotation(FieldType.read(node.desc) as ObjectType, parseRawAnnotationValues(node.values))
+
+private fun parseRawAnnotationValues(keyValues: List<Any>?): Map<String, AnnotationValue> {
+    if (keyValues == null) return mapOf()
+    val map = mutableMapOf<String, Any>()
+    var key: String? = null
+    keyValues.forEachIndexed { index, kv ->
+        if (index % 2 == 0) {
+            // Key
+            key = kv as String
+        } else {
+            // Value
+            map[key!!] = kv
+        }
+    }
+    return map.mapValues { (_, v) -> parseAnnotationValue(v) }
+}
+
+private fun parseAnnotationValue(value: Any): AnnotationValue = when (value) {
+    is Number -> AnnotationValue.Primitive.Num(value)
+    is Boolean -> AnnotationValue.Primitive.Bool(value)
+    is Char -> AnnotationValue.Primitive.Cha(value)
+    is String -> AnnotationValue.Primitive.Str(value)
+    is org.objectweb.asm.Type -> AnnotationValue.ClassType(JvmType.read(value.descriptor))
+    is Array<*> -> {
+        assert(value.size == 2)
+        assert(value[0] is String)
+        @Suppress("UNCHECKED_CAST")
+        value as Array<String>
+
+        val type = JvmType.read(value[0]) as ObjectType
+        AnnotationValue.Enum(type = type.fullClassName, constant = value[1])
+    }
+    is AnnotationNode -> AnnotationValue.Annotation(parseAnnotation(value))
+    is List<*> -> AnnotationValue.Array(value.map { parseAnnotationValue(it!!) })
+    else -> error("Unexpected annotation value '$value' of type '${value::class.qualifiedName}'")
+}
+
 
 private fun readField(field: FieldNode, classTypeArgs: TypeArgDecls): ClassApi.Field {
     val signature = if (field.signature != null) FieldSignature.readFrom(field.signature, classTypeArgs)

@@ -28,6 +28,7 @@ inline fun openJars(jar1: Path, jar2: Path, jar3: Path, usage: (FileSystem, File
     jar1.openJar { j1 -> jar2.openJar { j2 -> jar3.openJar { j3 -> usage(j1, j2, j3) } } }
 
 fun Path.isClassfile() = hasExtension(".class")
+fun Path.isExecutableClassfile() = isClassfile() && fileName.toString() != "module-info.class"
 fun Path.directChildren() = Files.list(this).asSequence()
 fun Path.recursiveChildren() = Files.walk(this).asSequence()
 fun Path.hasExtension(extension: String) = toString().endsWith(extension)

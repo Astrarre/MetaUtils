@@ -2,7 +2,6 @@
 
 package metautils.signature
 
-import descriptor.*
 import metautils.api.AnyJavaType
 import metautils.api.JavaAnnotation
 import metautils.api.JavaClassType

@@ -2,7 +2,9 @@ package metautils.codegeneration.asm
 
 import metautils.api.JavaAnnotation
 import codegeneration.*
-import descriptor.*
+import metautils.api.AnnotationValue
+import metautils.asm.AnnotateableVisitor
+import metautils.asm.annotateable
 import metautils.descriptor.*
 import metautils.signature.*
 import org.objectweb.asm.ClassWriter
@@ -12,6 +14,7 @@ import metautils.util.ClasspathIndex
 import metautils.util.QualifiedName
 import metautils.util.outerClass
 import metautils.util.writeBytes
+import org.objectweb.asm.AnnotationVisitor
 import java.nio.file.Path
 
 private fun MethodSignature.visitNames(visitor: (QualifiedName) -> Unit) {
@@ -66,6 +69,20 @@ private fun ReturnDescriptor.visitNames(visitor: (QualifiedName) -> Unit): Unit 
     is ArrayType -> componentType.visitNames(visitor)
     ReturnDescriptor.Void, is JvmPrimitiveType -> {
     }
+}
+
+private fun JavaAnnotation.visitNames(visitor: (QualifiedName) -> Unit) {
+    type.visitNames(visitor)
+    parameters.values.forEach { it.visitNames(visitor) }
+}
+
+private fun AnnotationValue.visitNames(visitor: (QualifiedName) -> Unit): Unit = when (this) {
+    is AnnotationValue.Array -> components.forEach { it.visitNames(visitor) }
+    is AnnotationValue.Annotation -> annotation.visitNames(visitor)
+    is AnnotationValue.Primitive -> {
+    }
+    is AnnotationValue.Enum -> visitor(type)
+    is AnnotationValue.ClassType -> type.visitNames(visitor)
 }
 
 fun ClassAccess.toAsmAccess(visibility: Visibility, isStatic: Boolean = false): Int {
@@ -123,8 +140,34 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
     private fun ObjectType.track() = fullClassName.track()
     private fun JvmType.track() = visitNames { it.track() }
     private fun Collection<ObjectType>.track() = forEach { it.track() }
-    private fun Collection<JavaAnnotation>.trackAno() = forEach { it.type.track() }
-//    private fun List<>.track(): QualifiedName = also { referencedNames.add(it) }
+    private fun Collection<JavaAnnotation>.trackAno() = forEach { it.track() }
+    private fun JavaAnnotation.track() = visitNames { it.track() }
+
+    private fun AnnotateableVisitor.visitJavaAnnotation(annotation: JavaAnnotation) {
+        visitAnnotation(annotation.type.classFileName, true).visitAnnotationParameters(annotation.parameters)
+    }
+
+    private fun AnnotationVisitor.visitAnnotationParameters(values: Map<String, AnnotationValue>) {
+        for ((name, value) in values) {
+            visitAnnotationValue(name, value)
+        }
+        visitEnd()
+    }
+
+    private fun AnnotationVisitor.visitAnnotationValue(name: String?, value: AnnotationValue) {
+        when (value) {
+            is AnnotationValue.Array -> {
+                val arrayVisitor = visitArray(name)
+                value.components.forEach { arrayVisitor.visitAnnotationValue(null, it) }
+                arrayVisitor.visitEnd()
+            }
+            is AnnotationValue.Annotation -> visitAnnotation(name, value.annotation.type.classFileName)
+                .visitAnnotationParameters(value.annotation.parameters)
+            is AnnotationValue.Primitive -> visit(name, value.primitive)
+            is AnnotationValue.Enum -> visitEnum(name, ObjectType(value.type).classFileName, value.constant)
+            is AnnotationValue.ClassType -> visit(name, value.type.asmType())
+        }
+    }
 
     inline fun writeClass(
         access: ClassAccess, visibility: Visibility, className: QualifiedName, sourceFile: String,
@@ -147,7 +190,7 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
             superInterfaces.map { it.fullClassName.toSlashQualifiedString() }.toTypedArray()
         )
 
-        annotations.forEach { classWriter.visitAnnotation(it.type.classFileName, false).visitEnd() }
+        annotations.forEach { classWriter.annotateable.visitJavaAnnotation(it) }
 
         classWriter.visitSource(sourceFile, null)
         init(ClassBody())
@@ -193,10 +236,10 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
                 throws.map { it.toJvmString() }.toTypedArray()
             )
 
-            parameterNames.forEach { methodWriter.visitParameter(it,0) }
+            parameterNames.forEach { methodWriter.visitParameter(it, 0) }
 
             for (annotation in annotations) {
-                methodWriter.visitAnnotation(annotation.type.classFileName, false).visitEnd()
+                methodWriter.annotateable.visitJavaAnnotation(annotation)
             }
 
             for ((index, paramAnnotations) in parameterAnnotations) {
@@ -228,7 +271,7 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
             )
 
             for (annotation in annotations) {
-                fieldVisitor.visitAnnotation(annotation.type.classFileName, false).visitEnd()
+                fieldVisitor.annotateable.visitJavaAnnotation(annotation)
             }
 
             fieldVisitor.visitEnd()

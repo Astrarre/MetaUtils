@@ -1,13 +1,8 @@
 package metautils.codegeneration.asm
 
 import codegeneration.*
-import codegeneration.asm.asmType
-import descriptor.*
 import metautils.codegeneration.GeneratedMethod
-import metautils.descriptor.JvmType
-import metautils.descriptor.MethodDescriptor
-import metautils.descriptor.ObjectType
-import metautils.descriptor.ReturnDescriptor
+import metautils.descriptor.*
 import metautils.util.*
 import org.objectweb.asm.Opcodes
 import metautils.signature.outerClass
@@ -18,7 +13,7 @@ private const val printStackOps = false
 private class JvmState(
     private val methodName: String,
     private val methodStatic: Boolean,
-    parameters: List<Pair<String,JvmType>>
+    parameters: List<Pair<String, JvmType>>
 ) {
     fun maxStackSize(): Int {
         if (currentStack != 0) error("$currentStack element(s) on the stack were not used yet")
@@ -34,18 +29,43 @@ private class JvmState(
         return type
     }
 
-    private val lvTable: MutableMap<String, JvmLocalVariable> = parameters.mapIndexed { i, (name, type) ->
-        name to JvmLocalVariable(i.applyIf(!methodStatic) { it + 1 }, type)
-    }.toMap().toMutableMap()
+    private val lvTable: MutableMap<String, JvmLocalVariable> = buildLvTable(parameters)
+
+    private fun buildLvTable(parameters: List<Pair<String, JvmType>>): MutableMap<String, JvmLocalVariable> {
+        val map = mutableMapOf<String, JvmLocalVariable>()
+        // The this variable is passed as the first argument in non-static methods
+        var currentIndex = if (methodStatic) 0 else 1
+        for ((name, type) in parameters) {
+            map[name] = JvmLocalVariable(currentIndex, type)
+            currentIndex += type.byteWidth()
+        }
+        return map
+    }
 
 
     // Max local variables is not tracked yet, assuming no local variables are created
     private var maxStack = 0
     private var currentStack = 0
 
-    inline fun trackPush(amount: Int = 1, message: () -> String = { "" }) {
+    inline fun trackPush(type: ReturnDescriptor, message: () -> String = { "" }) {
+        trackPush(type.byteWidth()) { message() + " of type $type" }
+    }
+
+    inline fun trackReferencePush(message: () -> String = { "" }) {
+        trackPush(1) { message() + " of reference type" }
+    }
+
+    inline fun trackPop(type: ReturnDescriptor, message: () -> String = { "" }) {
+        trackPop(type.byteWidth()) { message() + " of type $type" }
+    }
+
+    inline fun trackReferencePop(message: () -> String = { "" }) {
+        trackPop(1) { message() + " of reference type" }
+    }
+
+    private inline fun trackPush(/*type: ReturnDescriptor,*/ width: Int, message: () -> String) {
         val oldCurrent = currentStack
-        currentStack += amount
+        currentStack += width
 
         if (maxStack < currentStack) maxStack = currentStack
 
@@ -56,14 +76,17 @@ private class JvmState(
 
     }
 
-    inline fun trackPop(amount: Int = 1, message: () -> String = { "" }) {
+    private inline fun trackPop(/*type: ReturnDescriptor,*/ width: Int, message: () -> String) {
         if (printStackOps) {
             val str = message().let { if (it.isEmpty()) "operation" else it }
             print("$str: ")
         }
-        if (currentStack < amount) error("Attempt to pop $amount element(s) from stack when it only contains $currentStack in method $methodName")
+//        val width = type.byteWidth()
+        if (currentStack < width) {
+            error("Attempt to pop $width byte(s) from stack when it only contains $currentStack byte(s) in method $methodName")
+        }
         val oldCurrent = currentStack
-        currentStack -= amount
+        currentStack -= width
         if (printStackOps) {
             println("$oldCurrent -> $currentStack")
         }
@@ -77,9 +100,10 @@ const val ConstructorsName = "<init>"
 
 internal class AsmGeneratedMethod(
     private val methodWriter: AsmClassWriter.MethodBody,
+    private val returnType: ReturnDescriptor,
     name: String,
     isStatic: Boolean,
-    parameters: List<Pair<String,JvmType>>
+    parameters: List<Pair<String, JvmType>>
 ) : GeneratedMethod {
     fun maxStackSize(): Int = state.maxStackSize()
 
@@ -103,7 +127,7 @@ internal class AsmGeneratedMethod(
             is ReturnStatement -> {
                 // the RETURN is added by addMethod()
                 target.addOpcodes()
-                trackPop { "return" }
+                trackPop(returnType) { "return" }
             }
             is AssignmentStatement -> {
                 if (target is FieldExpression) target.receiver.addOpcodes()
@@ -118,13 +142,14 @@ internal class AsmGeneratedMethod(
                     returnType = ReturnDescriptor.Void,
                     owner = superType,
                     parameterTypes = parameters.keys,
+                    parametersThatWillBePopped = superType.prependTo(parameters.keys),
                     parametersToLoad = ThisExpression.prependTo(parameters.values)
                 )
             }
             is VariableExpression -> {
                 val (index, type) = state.getVariable(this@addOpcodes)
                 methodWriter.writeLvArgInstruction(type.asmType().getOpcode(Opcodes.ILOAD), index)
-                trackPush { "variable get" }
+                trackPush(type) { "variable get" }
             }
             is CastExpression -> {
                 target.addOpcodes()
@@ -134,21 +159,21 @@ internal class AsmGeneratedMethod(
                 receiver.addOpcodes()
                 val opcode = if (receiver is ClassReceiver) Opcodes.GETSTATIC else Opcodes.GETFIELD
                 methodWriter.writeFieldArgInstruction(opcode, owner, name, type)
-                if (receiver !is ClassReceiver) trackPop { "field receiver consume" }
-                trackPush { "field get" }
+                if (receiver !is ClassReceiver) trackPop(owner) { "field receiver consume" }
+                trackPush(type) { "field get" }
             }
             is MethodCall -> addMethodCall()
 
             is ArrayConstructor -> {
-                trackPush { "push array size" }
+                trackPush(JvmPrimitiveType.Int) { "push array size" }
                 methodWriter.writeLvArgInstruction(Opcodes.ILOAD, 0)
                 // Assumes reference type array
-                trackPop { "pass array size" }
-                methodWriter.writeTypeArgInstruction(Opcodes.ANEWARRAY, componentClass.type.toJvmType())
-                trackPush { "push array result" }
+                trackPop(JvmPrimitiveType.Int) { "pass array size" }
+                methodWriter.writeTypeArgInstruction(Opcodes.ANEWARRAY, componentClass.toJvmType())
+                trackReferencePush { "push array result" }
             }
             ThisExpression -> {
-                trackPush { "push this" }
+                trackReferencePush { "push this" }
                 methodWriter.writeLvArgInstruction(Opcodes.ALOAD, 0)
             }
         }
@@ -160,8 +185,8 @@ internal class AsmGeneratedMethod(
 //            receiver.addOpcodes()
             val isStatic = receiver is ClassReceiver
             val opcode = if (isStatic) Opcodes.PUTSTATIC else Opcodes.PUTFIELD
-            if (!isStatic) state.trackPop { "pass field receiver" }
-            state.trackPop { "pass field value" }
+            if (!isStatic) state.trackReferencePop { "pass field receiver" }
+            state.trackPop(type) { "pass field value" }
             methodWriter.writeFieldArgInstruction(opcode, owner, name, type)
         }
         else -> error("Impossible")
@@ -177,17 +202,23 @@ internal class AsmGeneratedMethod(
     }
 
     private fun invoke(
-        opcode: Int, methodName: String,
+        opcode: Int,
+        methodName: String,
         parameterTypes: List<JvmType>,
         parametersToLoad: List<Receiver>,
-        returnType: ReturnDescriptor, owner: ObjectType, isInterface: Boolean, parametersAlreadyLoaded: Int = 0
+        // This is needed just for checks, we don't actually need this information technically
+        parametersThatWillBePopped: List<JvmType>,
+        returnType: ReturnDescriptor,
+        owner: ObjectType,
+        isInterface: Boolean/*,
+        parametersAlreadyLoaded: List<JvmType> = listOf()*/
     ) {
         parametersToLoad.forEach { it.addOpcodes() }
+        parametersThatWillBePopped.forEach { state.trackPop(it) { "pass parameter" } }
 
         val descriptor = MethodDescriptor(parameterTypes, returnType)
 
-        state.trackPop(parametersToLoad.size + parametersAlreadyLoaded) { "pass parameters" }
-        if (returnType != ReturnDescriptor.Void) state.trackPush { "push method result" }
+        state.trackPush(returnType) { "push method result" }
         methodWriter.writeMethodCall(opcode, owner, methodName, descriptor, isInterface)
     }
 
@@ -195,6 +226,7 @@ internal class AsmGeneratedMethod(
         is MethodCall.Method -> {
             val isInterface = receiverAccess.variant.isInterface
             val receiver = if (methodAccess.isStatic) null else receiver ?: ThisExpression
+            val receiverType = if (methodAccess.isStatic) null else owner
             invoke(
                 opcode = methodAccess.invokeOpcode(isInterface, isSuperCall = receiver == SuperReceiver),
                 methodName = name,
@@ -202,27 +234,31 @@ internal class AsmGeneratedMethod(
                 owner = owner,
                 isInterface = isInterface,
                 parametersToLoad = parameters.values.prependIfNotNull(receiver),
+                parametersThatWillBePopped = parameters.keys.prependIfNotNull(receiverType),
                 parameterTypes = parameters.keys
             )
         }
         is MethodCall.Constructor -> {
             methodWriter.writeTypeArgInstruction(Opcodes.NEW, constructing.toJvmType())
+            state.trackReferencePush { "NEW operation on ${constructing.toJvmType().toJvmString()}" }
             methodWriter.writeZeroOperandInstruction(Opcodes.DUP)
-            state.trackPush(2) { "NEW operation on ${constructing.toJvmType().toJvmString()}" }
+            state.trackReferencePush { "DUP operation on ${constructing.toJvmType().toJvmString()}" }
+
+            // outer class is implicitly the first parameter in java, but explicitly the first parameter in bytecode
+            val explicitlyDeclaredMethodParameters = parameters.keys.applyIf(receiver != null) {
+                // Add outer class as first param to inner class
+                constructing.outerClass().toJvmType().prependTo(it)
+            }
 
             invoke(
                 opcode = Opcodes.INVOKESPECIAL,
                 methodName = ConstructorsName,
-                // outer class is implicitly the first parameter in java, but explicitly the first parameter in bytecode
-                parameterTypes = parameters.keys.applyIf(receiver != null) {
-                    // Add outer class as first param to inner class
-                    constructing.outerClass().toJvmType().prependTo(it)
-                },
+                parameterTypes = explicitlyDeclaredMethodParameters,
                 parametersToLoad = parameters.values.prependIfNotNull(receiver), // inner class
+                parametersThatWillBePopped = constructing.toJvmType().prependTo(explicitlyDeclaredMethodParameters),
                 returnType = ReturnDescriptor.Void,
                 owner = constructing.toJvmType(),
-                isInterface = false,
-                parametersAlreadyLoaded = 1
+                isInterface = false
             )
         }
     }

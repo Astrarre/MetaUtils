@@ -30,7 +30,7 @@ fun verifyClassFiles(dir: Path, classpath: List<Path>) {
         val relativePath = dir.relativize(it)
         val className = relativePath.toString().replace(File.separator, ".").removeSuffix(".class")
         try {
-            Class.forName(className, true, classLoader)
+            Class.forName(className, false, classLoader)
         } catch (e: Throwable) {
             println("Error in class $className")
             throw e

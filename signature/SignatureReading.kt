@@ -128,12 +128,13 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
     }
 
     private fun readSimpleClassTypeSignature(): SimpleClassGenericType {
-        val identifier = readUntil(until = { it == '<' || it == '$' || it == ';' }, skip = false)
+        val identifier = readUntil(until = { it == '<' || it == '.' || it == '$' || it == ';' }, skip = false)
         val typeArguments = if (current() == '<') readTypeArguments()
         else {
-            if (current() == '$') advance()
             null
         }
+        val current = current()
+        if (current == '.' || current == '$') advance()
         return SimpleClassGenericType(identifier, typeArguments)
     }
 

@@ -26,9 +26,12 @@ val Visible.isPublic get() = visibility == Visibility.Public
 val Visible.isProtected get() = visibility == Visibility.Protected
 val ClassApi.Method.isConstructor get() = name == "<init>"
 fun ClassApi.Method.getJvmDescriptor() = MethodDescriptor(
-    parameterDescriptors = parameters.map { (_, type) -> type.type.toJvmType() },
+    parameterDescriptors = getJvmParameters(),
     returnDescriptor = returnType.toJvmType()
 )
+
+fun ClassApi.Method.getJvmParameters() = parameters.map { (_, type) -> type.type.toJvmType() }
+
 
 /**
  * Goes from top to bottom
@@ -53,6 +56,7 @@ fun ClassApi.asRawType() = asJvmType().toRawJavaType()
 fun ClassApi.asJvmType() = ObjectType(name)
 
 fun ClassApi.isSamInterface() = isInterface && methods.filter { it.isAbstract }.size == 1
+
 //fun ClassApi.isThrowable(index: ClasspathIndex) = index.doesClassEventuallyExtend(name, ThrowableName)
 private val ThrowableName = "java/lang/Throwable".toQualifiedName(dotQualified = false)
 
@@ -65,7 +69,7 @@ fun ClassApi.getSignature(): ClassSignature = ClassSignature(
 
 fun ClassApi.visitThisAndInnerClasses(visitor: (ClassApi) -> Unit) {
     visitor(this)
-    innerClasses.forEach(visitor)
+    innerClasses.forEach { it.visitThisAndInnerClasses(visitor) }
 }
 
 @OptIn(ExperimentalStdlibApi::class)

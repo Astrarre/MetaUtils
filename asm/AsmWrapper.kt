@@ -1,5 +1,9 @@
-package asm
+package metautils.asm
 
+import org.objectweb.asm.AnnotationVisitor
+import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.FieldVisitor
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
@@ -50,3 +54,11 @@ class MethodAsmNode(override val node: MethodNode, private val className: String
 //soft to do: handle passing of class name information in the case of inner classes
 val ClassNode.fieldsWrapped get() = fields.map { FieldAsmNode(it, name) }
 val ClassNode.methodsWrapped get() = methods.map { MethodAsmNode(it, name) }
+
+
+class AnnotateableVisitor(val visitAnnotation: (descriptor: String, visible:  Boolean) -> AnnotationVisitor)
+
+val ClassVisitor.annotateable get() = AnnotateableVisitor { descriptor, visible -> visitAnnotation(descriptor, visible) }
+val MethodVisitor.annotateable get() = AnnotateableVisitor { descriptor, visible -> visitAnnotation(descriptor, visible) }
+val FieldVisitor.annotateable get() = AnnotateableVisitor { descriptor, visible -> visitAnnotation(descriptor, visible) }
+//val AnnotationVisitor.annotateable get() = AnnotateableNode { name, visible -> visitAnnotation(name, visible) }

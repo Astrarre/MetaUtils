@@ -1,4 +1,4 @@
-package descriptor
+package metautils.descriptor
 
 import metautils.descriptor.*
 import metautils.util.QualifiedName
@@ -17,6 +17,12 @@ fun <T : Descriptor> Iterable<T>.remap(mapper: (className: QualifiedName) -> Qua
 
 fun ObjectType.toJvmString() = fullClassName.toSlashQualifiedString()
 fun ReturnDescriptor.toJvmString() = if (this is ObjectType) toJvmString() else classFileName
+fun ReturnDescriptor.isTwoBytesWide() = this == JvmPrimitiveType.Long || this == JvmPrimitiveType.Double
+fun ReturnDescriptor.byteWidth() = when{
+    this == ReturnDescriptor.Void -> 0
+    isTwoBytesWide() -> 2
+    else -> 1
+}
 
 
 const val JavaLangObjectString = "java/lang/Object"

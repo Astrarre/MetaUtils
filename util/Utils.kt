@@ -1,6 +1,11 @@
 package metautils.util
 
-import kotlin.contracts.ExperimentalContracts
+import java.net.URL
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 fun String.includeIf(boolean: Boolean) = if (boolean) this else ""
@@ -46,4 +51,12 @@ inline fun <T> recursiveList(seed: T?, getter: (T) -> T?): List<T> {
     }
 
     return list
+}
+
+fun downloadUtfStringFromUrl(url: String): String {
+    return URL(url).openStream().use { String(it.readBytes(), StandardCharsets.UTF_8) }
+}
+
+fun downloadJarFromUrl(url: String, to: Path) {
+    return URL(url).openStream().use { to.writeBytes(it.readBytes()) }
 }
