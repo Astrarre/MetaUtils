@@ -81,7 +81,7 @@ private fun AnnotationValue.visitNames(visitor: (QualifiedName) -> Unit): Unit =
     is AnnotationValue.Annotation -> annotation.visitNames(visitor)
     is AnnotationValue.Primitive -> {
     }
-    is AnnotationValue.Enum -> visitor(type)
+    is AnnotationValue.Enum -> visitor(type.fullClassName)
     is AnnotationValue.ClassType -> type.visitNames(visitor)
 }
 
@@ -164,7 +164,7 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
             is AnnotationValue.Annotation -> visitAnnotation(name, value.annotation.type.classFileName)
                 .visitAnnotationParameters(value.annotation.parameters)
             is AnnotationValue.Primitive -> visit(name, value.primitive)
-            is AnnotationValue.Enum -> visitEnum(name, ObjectType(value.type).classFileName, value.constant)
+            is AnnotationValue.Enum -> visitEnum(name, value.type.classFileName, value.constant)
             is AnnotationValue.ClassType -> visit(name, value.type.asmType())
         }
     }

@@ -9,7 +9,7 @@ import metautils.descriptor.ReturnDescriptor
 
 sealed class Code {
     override fun toString(): String {
-        val (string, format) = JavaCodeWriter().write(this)
+        val (string, format) = JavaCodeWriter().writeCode(this)
         var index = 0
         return string.replace(Regex("\\\$T")) { format[index++].toString() }
     }

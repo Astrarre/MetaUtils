@@ -1,9 +1,10 @@
 package metautils.codegeneration
 
 import codegeneration.*
+import com.squareup.javapoet.*
+import metautils.api.AnnotationValue
 import metautils.api.JavaAnnotation
 import metautils.api.JavaType
-import com.squareup.javapoet.*
 import metautils.descriptor.JvmPrimitiveType
 import metautils.descriptor.JvmType
 import metautils.descriptor.ObjectType
@@ -14,7 +15,8 @@ internal sealed class CodeWriter {
     /**
      * Note: This is a pure operation, I just thing "CodeWriter" is the most fitting name.
      */
-    abstract fun write(code: Code): FormattedString
+    abstract fun writeCode(code: Code): FormattedString
+    abstract fun writeAnnotationValue(value: AnnotationValue): FormattedString
 }
 
 
@@ -26,9 +28,9 @@ internal sealed class CodeWriter {
 //}
 
 internal open class JavaCodeWriter : CodeWriter() {
-    private fun write(expression: Expression) = write(expression.code)
-    private fun write(rec: Receiver) = write(rec.code)
-    override fun write(code: Code): FormattedString = when (code) {
+    private fun write(expression: Expression) = writeCode(expression.code)
+    private fun write(rec: Receiver) = writeCode(rec.code)
+    override fun writeCode(code: Code): FormattedString = when (code) {
         is VariableExpression -> code.name.format
         is CastExpression -> write(code.target).mapString { "($TYPE_FORMAT)$it" }
             .prependArg(code.castTo)
@@ -41,11 +43,32 @@ internal open class JavaCodeWriter : CodeWriter() {
         is ReturnStatement -> write(code.target).mapString { "return $it" }
         is ClassReceiver -> TYPE_FORMAT.formatType(code.type.toRawJavaType())
         SuperReceiver -> "super".format
-        is AssignmentStatement -> write(code.target as Code).mapString { "$it = " } + write(code.assignedValue)
+        is AssignmentStatement -> writeCode(code.target as Code).mapString { "$it = " } + write(code.assignedValue)
         is ArrayConstructor -> write(code.size).mapString { "new $TYPE_FORMAT[$it]" }
             .prependArg(code.componentClass)
 //        is ConstructorCall.This -> code.parameters.toParameterList().mapString { "this$it" }
         is ConstructorCall.Super -> code.parameters.toParameterList().mapString { "super$it" }
+    }
+
+    override fun writeAnnotationValue(value: AnnotationValue): FormattedString = when (value) {
+        is AnnotationValue.Array -> {
+            val elements = value.components.map { writeAnnotationValue(it) }
+            val string = "[" + elements.joinToString(", ") { it.string } + "]"
+            string.formatType(elements.flatMap { it.formatArguments })
+        }
+        is AnnotationValue.Annotation -> {
+            val elements = value.annotation.parameters.map { (name, value) -> name to writeAnnotationValue(value) }
+            val arguments = elements.joinToString(", ") { (name, format) -> "$name = ${format.string}" }
+            val string = "@$TYPE_FORMAT($arguments)"
+            string.formatType(value.annotation.type.toRawJavaType())
+                .appendArgs(elements.flatMap { (_, format) -> format.formatArguments })
+        }
+        is AnnotationValue.Primitive.Num -> value.primitive.toString().format
+        is AnnotationValue.Primitive.Bool -> (if (value.primitive) "true" else "false").format
+        is AnnotationValue.Primitive.Cha -> "'${value.primitive}'".format
+        is AnnotationValue.Primitive.Str -> "\"${value.primitive}\"".format
+        is AnnotationValue.Enum -> "$TYPE_FORMAT.${value.constant}".formatType(value.type.toRawJavaType())
+        is AnnotationValue.ClassType -> TODO()
     }
 
     private fun List<Pair<JvmType, Expression>>.toParameterList(): FormattedString {
@@ -60,7 +83,7 @@ internal open class JavaCodeWriter : CodeWriter() {
 //    private fun String.removeParentheses() = if (startsWith("(")) substring(1, length - 1) else this
 
     private fun MethodCall.prefix(): FormattedString = when (this) {
-        is MethodCall.Method -> if (receiver == null) name.format else write(receiver as Code)
+        is MethodCall.Method -> if (receiver == null) name.format else writeCode(receiver as Code)
             .mapString { "${it.withParentheses()}.$name" }
         is MethodCall.Constructor -> {
             val rightSide = "new $TYPE_FORMAT".formatType(constructing)
@@ -90,7 +113,16 @@ fun TypeArgumentDeclaration.toTypeName(): TypeVariableName = TypeVariableName.ge
 
 fun JavaType<*>.toTypeName(): TypeName {
     //soft to do: annotations
-    return type.toTypeName()
+    return type.toTypeName().annotated(annotations.map { it.toAnnotationSpec() })
+}
+
+fun JavaAnnotation.toAnnotationSpec(): AnnotationSpec {
+    return AnnotationSpec.builder(type.toTypeName()).apply {
+        for ((name, value) in parameters) {
+            val (string, format) = JavaCodeWriter().writeAnnotationValue(value)
+            addMember(name, string, *format.map { it.toTypeName() }.toTypedArray())
+        }
+    }.build()
 }
 
 fun GenericReturnType.toTypeName(): TypeName = when (this) {
@@ -156,7 +188,7 @@ private fun TypeArgument.toTypeName(): TypeName = when (this) {
     TypeArgument.AnyType -> WildcardTypeName.subtypeOf(TypeName.OBJECT)
 }
 
-fun JavaAnnotation.toAnnotationSpec(): AnnotationSpec = AnnotationSpec.builder(type.toTypeName()).build()
+//fun JavaAnnotation.toAnnotationSpec(): AnnotationSpec = AnnotationSpec.builder(type.toTypeName()).build()
 
 private fun ObjectType.toTypeName(): ClassName {
     val shortName = fullClassName.shortName
@@ -169,6 +201,7 @@ private fun ObjectType.toTypeName(): ClassName {
 internal data class FormattedString(val string: String, val formatArguments: List<JavaType<*>>) {
     fun mapString(map: (String) -> String) = copy(string = map(string))
     fun appendArg(arg: JavaType<*>) = copy(formatArguments = formatArguments + arg)
+    fun appendArgs(args: List<JavaType<*>>) = copy(formatArguments = formatArguments + args)
     fun prependArg(arg: JavaType<*>) = copy(formatArguments = listOf(arg) + formatArguments)
     fun prependArgs(args: List<JavaType<*>>) = copy(formatArguments = args + formatArguments)
 

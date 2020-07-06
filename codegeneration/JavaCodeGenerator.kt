@@ -123,7 +123,7 @@ class JavaGeneratedClass(
                 if (isStatic) addModifiers(Modifier.STATIC)
                 if (isFinal) addModifiers(Modifier.FINAL)
                 if (initializer != null) {
-                    val (format, arguments) = JavaCodeWriter().write(initializer.code)
+                    val (format, arguments) = JavaCodeWriter().writeCode(initializer.code)
                     initializer(format, *arguments.toTypeNames())
                 }
                 addAnnotations(type.annotations.map { it.toAnnotationSpec() })
@@ -145,7 +145,7 @@ private fun List<JavaType<*>>.toTypeNames() = map { it.toTypeName() }.toTypedArr
 class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) : GeneratedMethod {
 
     override fun addStatement(statement: Statement) {
-        val (format, arguments) = JavaCodeWriter().write(statement.code)
+        val (format, arguments) = JavaCodeWriter().writeCode(statement.code)
         methodSpec.addStatement(format, *arguments.toTypeNames())
     }
 

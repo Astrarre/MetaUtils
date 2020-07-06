@@ -182,7 +182,7 @@ private fun parseAnnotationValue(value: Any): AnnotationValue = when (value) {
         value as Array<String>
 
         val type = JvmType.read(value[0]) as ObjectType
-        AnnotationValue.Enum(type = type.fullClassName, constant = value[1])
+        AnnotationValue.Enum(type = type, constant = value[1])
     }
     is AnnotationNode -> AnnotationValue.Annotation(parseAnnotation(value))
     is List<*> -> AnnotationValue.Array(value.map { parseAnnotationValue(it!!) })

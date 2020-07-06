@@ -35,7 +35,7 @@ sealed class AnnotationValue {
         class Str(override val primitive: String) : Primitive()
     }
 
-    class Enum(val type: QualifiedName, val constant: String) : AnnotationValue()
+    class Enum(val type: ObjectType, val constant: String) : AnnotationValue()
     class ClassType(val type: JvmType) : AnnotationValue()
 }
 
