@@ -12,6 +12,7 @@ fun Path.delete() = Files.delete(this)
 fun Path.deleteRecursively() = toFile().deleteRecursively()
 inline fun <T> Path.openJar(usage: (FileSystem) -> T): T = FileSystems.newFileSystem(this, null).use(usage)
 fun Path.walk(): Sequence<Path> = Files.walk(this).asSequence()
+//fun Path.walk(): Sequence<Path> = Files.walk(this).asSequence()
 fun <T> Path.walkJar(usage: (Sequence<Path>) -> T): T = openJar { usage(it.getPath("/").walk()) }
 fun Path.createJar(contents: (JarOutputStream) -> Unit = {}) =
     JarOutputStream(Files.newOutputStream(this)).use(contents)

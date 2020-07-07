@@ -1,5 +1,9 @@
 package metautils.util
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -59,4 +63,8 @@ fun downloadUtfStringFromUrl(url: String): String {
 
 fun downloadJarFromUrl(url: String, to: Path) {
     return URL(url).openStream().use { to.writeBytes(it.readBytes()) }
+}
+
+suspend fun <A, B> Iterable<A>.parallelMap(f: suspend (A) -> B): List<B> = coroutineScope {
+    map { async(Dispatchers.Default) { f(it) } }.awaitAll()
 }

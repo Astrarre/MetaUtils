@@ -32,11 +32,11 @@ private const val DotClassLength = 6
 /**
  * class names use slash/separated/format
  */
-class ClasspathIndex private constructor(classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>) :
+class ClasspathIndex @PublishedApi internal constructor(classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>) :
     AutoCloseable {
 
     companion object {
-        fun <T> index(
+        inline fun <T> index(
             classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>,
             usage: (ClasspathIndex) -> T
         ): T = ClasspathIndex(classPath, additionalEntries).let {

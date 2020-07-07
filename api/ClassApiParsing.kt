@@ -7,6 +7,8 @@ import codegeneration.ClassAccess
 import codegeneration.ClassVariant
 import codegeneration.MethodAccess
 import codegeneration.Visibility
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.runBlocking
 import metautils.asm.*
 import metautils.descriptor.*
 import metautils.signature.*
@@ -19,38 +21,48 @@ import metautils.signature.noAnnotations
 import metautils.signature.toRawGenericType
 import metautils.util.*
 import java.nio.file.Path
+import kotlin.system.measureTimeMillis
 
 fun ClassApi.Companion.readFromJar(jarPath: Path, filter: (Path) -> Boolean): Collection<ClassApi> {
     require(jarPath.hasExtension(".jar")) { "Specified path $jarPath does not point to a jar" }
 
     // Only pass top-level classes into readSingularClass()
 
-    return jarPath.openJar { jar ->
+//    val start = System.currentTimeMillis()
+    val result = jarPath.openJar { jar ->
         val root = jar.getPath("/")
-        root.walk().asSequence().filter(filter).readFromSequence(root)
+        runBlocking {
+            root.walk().filter(filter).readFromSequence(root)
+        }
     }
+
+//    println("Parsing took ${System.currentTimeMillis() - start} millis")
+
+    return result
 }
 
 
-fun ClassApi.Companion.readFromDirectory(dirPath: Path): Collection<ClassApi> {
-    require(dirPath.isDirectory()) { "Specified path $dirPath is not a directory" }
+//fun ClassApi.Companion.readFromDirectory(dirPath: Path): Collection<ClassApi> {
+//    require(dirPath.isDirectory()) { "Specified path $dirPath is not a directory" }
+//
+//    return dirPath.recursiveChildren().readFromSequence(dirPath)
+//}
 
-    return dirPath.recursiveChildren().readFromSequence(dirPath)
-}
+//fun ClassApi.Companion.readFromList(
+//    list: List<Path>,
+//    rootPath: Path
+//): Collection<ClassApi> =
+//    list.asSequence().readFromSequence(rootPath)
 
-fun ClassApi.Companion.readFromList(
-    list: List<Path>,
-    rootPath: Path
-): Collection<ClassApi> =
-    list.asSequence().readFromSequence(rootPath)
-
-private fun Sequence<Path>.readFromSequence(rootPath: Path): Collection<ClassApi> = filter {
+private suspend fun Sequence<Path>.readFromSequence(rootPath: Path): Collection<ClassApi> = filter {
     // Only pass top-level classes into readSingularClass()
     it.isClassfile() && '$' !in it.toString()
-}
+}.toList()
 //            .filter { "Concrete" in it.toString() }
-    .map { readSingularClass(rootPath, it, outerClass = null, isStatic = false, isProtected = false) }
-    .toList()
+    .parallelMap {
+//        println("Processing class $it")
+        readSingularClass(rootPath, it, outerClass = null, isStatic = false, isProtected = false)
+    }
 
 
 // isStatic information is passed by the parent class for inner classes
