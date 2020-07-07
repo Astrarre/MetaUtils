@@ -263,8 +263,6 @@ object AbstractGeneratedMethod : GeneratedMethod {
     }
 
     override fun addJavadoc(comment: String) {
-        error("Method is abstract")
     }
-
 }
 

@@ -5,6 +5,7 @@ import com.squareup.javapoet.*
 import metautils.api.AnnotationValue
 import metautils.api.JavaAnnotation
 import metautils.api.JavaType
+import metautils.descriptor.ArrayType
 import metautils.descriptor.JvmPrimitiveType
 import metautils.descriptor.JvmType
 import metautils.descriptor.ObjectType
@@ -68,7 +69,24 @@ internal open class JavaCodeWriter : CodeWriter() {
         is AnnotationValue.Primitive.Cha -> "'${value.primitive}'".format
         is AnnotationValue.Primitive.Str -> "\"${value.primitive}\"".format
         is AnnotationValue.Enum -> "$TYPE_FORMAT.${value.constant}".formatType(value.type.toRawJavaType())
-        is AnnotationValue.ClassType -> TODO()
+        is AnnotationValue.ClassType -> value.type.toFormattedString().mapString { "$it.class" }
+    }
+
+    private fun JvmPrimitiveType.toFormat() = when(this) {
+        JvmPrimitiveType.Byte -> "byte"
+        JvmPrimitiveType.Char -> "char"
+        JvmPrimitiveType.Double -> "double"
+        JvmPrimitiveType.Float -> "float"
+        JvmPrimitiveType.Int -> "int"
+        JvmPrimitiveType.Long -> "long"
+        JvmPrimitiveType.Short -> "short"
+        JvmPrimitiveType.Boolean -> "boolean"
+    }
+
+    private fun JvmType.toFormattedString() : FormattedString = when(this){
+        is JvmPrimitiveType -> toFormat().format
+        is ObjectType -> TYPE_FORMAT.formatType(toRawJavaType())
+        is ArrayType -> componentType.toFormattedString().mapString { "$it[]" }
     }
 
     private fun List<Pair<JvmType, Expression>>.toParameterList(): FormattedString {

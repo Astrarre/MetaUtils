@@ -88,7 +88,7 @@ private fun readSingularClass(
             nonStaticOuterClassTypeArgs
 
     val methods = classNode.methods.filter { !it.isSynthetic }
-        .map { readMethod(it, classNode, classTypeArgs = classTypeArgMap) }
+        .map { readMethod(it, /*classNode, */classTypeArgs = classTypeArgMap) }
     val fields = classNode.fields.map { readField(it, classTypeArgs = classTypeArgMap) }
 
     val fullClassName = classNode.name.toQualifiedName(dotQualified = false)
@@ -221,7 +221,7 @@ private fun getNonGeneratedParameterDescriptors(
 
 private fun readMethod(
     method: MethodNode,
-    classNode: ClassNode,
+//    classNode: ClassNode,
     classTypeArgs: TypeArgDecls
 ): ClassApi.Method {
     val signature = if (method.signature != null) MethodSignature.readFrom(method.signature, classTypeArgs) else {
@@ -233,7 +233,7 @@ private fun readMethod(
             throwsSignatures = method.exceptions.map { ClassGenericType.fromRawClassString(it) }
         )
     }
-    val parameterNames = inferParameterNames(method, classNode, signature.parameterTypes.size)
+    val parameterNames = inferParameterNames(method, /*classNode,*/ signature.parameterTypes.size)
 
     val visibility = method.visibility
 
@@ -265,7 +265,7 @@ private fun readMethod(
 
 private fun inferParameterNames(
     method: MethodNode,
-    classNode: ClassNode,
+//    classNode: ClassNode,
     parameterCount: Int
 ): List<String> {
     val locals = method.localVariables
@@ -276,16 +276,16 @@ private fun inferParameterNames(
         }
         locals != null -> {
             val nonThisLocalNames = locals.filter { it.name != "this" }.map { it.name }
-            // Enums pass the name and ordinal into the constructor as well
-            val namesWithEnum = nonThisLocalNames.applyIf(classNode.isEnum) {
-                listOf("\$enum\$name", "\$enum\$ordinal") + it
-            }
+//            // Enums pass the name and ordinal into the constructor as well
+//            val namesWithEnum = nonThisLocalNames.applyIf(classNode.isEnum && method.isConstructor) {
+//                listOf("\$enum\$name", "\$enum\$ordinal") + it
+//            }
 
-            check(namesWithEnum.size >= parameterCount) {
-                "There was not enough (${namesWithEnum.size}) local variable debug information for all parameters" +
+            check(nonThisLocalNames.size >= parameterCount) {
+                "There was not enough (${nonThisLocalNames.size}) local variable debug information for all parameters" +
                         " ($parameterCount} of them) in method ${method.name}"
             }
-            namesWithEnum.take(parameterCount).map { it }
+            nonThisLocalNames.take(parameterCount).map { it }
         }
         else -> listOf()
     }

@@ -36,15 +36,20 @@ class ClasspathIndex private constructor(classPath: List<Path>, additionalEntrie
     AutoCloseable {
 
     companion object {
-        fun index(classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>) = ClasspathIndex(
-            classPath, additionalEntries
-        )
+        fun <T> index(
+            classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>,
+            usage: (ClasspathIndex) -> T
+        ): T = ClasspathIndex(classPath, additionalEntries).let {
+            val result = usage(it)
+            it.close()
+            result
+        }
     }
 
     private data class PathInfo(val classes: List<Pair<QualifiedName, Path>>, val openedJar: FileSystem?)
 
     private val classpathMap: Map<QualifiedName, Path>
-    private val openedJars : List<FileSystem>
+    private val openedJars: List<FileSystem>
     private val classesCache = ConcurrentHashMap(additionalEntries)
 
     init {

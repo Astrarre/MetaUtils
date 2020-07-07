@@ -8,7 +8,9 @@ import metautils.api.JavaType
 import com.squareup.javapoet.*
 import metautils.signature.TypeArgumentDeclaration
 import metautils.util.PackageName
+import metautils.util.applyIf
 import java.nio.file.Path
+import javax.lang.model.SourceVersion
 import javax.lang.model.element.Modifier
 
 
@@ -45,12 +47,12 @@ private fun generateClass(info: ClassInfo): TypeSpec.Builder = with(info) {
     return builder
 }
 
-private fun generateMethod(info: MethodInfo, name: String?): MethodSpec.Builder = with(info) {
-    val builder = if (name != null) MethodSpec.methodBuilder(name) else MethodSpec.constructorBuilder()
+private fun generateMethod(info: MethodInfo, methodName: String?): MethodSpec.Builder = with(info) {
+    val builder = if (methodName != null) MethodSpec.methodBuilder(methodName) else MethodSpec.constructorBuilder()
     builder.apply {
         JavaGeneratedMethod(this).apply(body)
         addParameters(info.parameters.map { (name, type, javadoc) ->
-            ParameterSpec.builder(type.toTypeName(), name).apply {
+            ParameterSpec.builder(type.toTypeName(), name.applyIf(!SourceVersion.isName(name)) { it + "_" }).apply {
                 addAnnotations(type.annotations.map { it.toAnnotationSpec() })
                 if (javadoc != null) addJavadoc(javadoc)
             }.build()
@@ -80,7 +82,7 @@ class JavaGeneratedClass(
             //soft to do: the fact the annotations are attached to the return type is a bit wrong,
             // but in java if you put the same annotation on the method and return type
             // it counts as duplicating the annotation...
-            returns(returnType.toTypeName())
+            returns(returnType.type.toTypeName())
             addAnnotations(returnType.annotations.map { it.toAnnotationSpec() })
 
             when {
@@ -99,7 +101,7 @@ class JavaGeneratedClass(
 
     override fun addConstructor(info: MethodInfo) {
         require(!isInterface) { "Interfaces don't have constructors" }
-        typeSpec.addMethod(generateMethod(info, name = null).build())
+        typeSpec.addMethod(generateMethod(info, methodName = null).build())
     }
 
     override fun addInnerClass(info: ClassInfo, isStatic: Boolean) {
