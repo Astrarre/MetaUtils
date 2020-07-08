@@ -66,5 +66,5 @@ fun downloadJarFromUrl(url: String, to: Path) {
 }
 
 suspend fun <A, B> Iterable<A>.parallelMap(f: suspend (A) -> B): List<B> = coroutineScope {
-    map { async(Dispatchers.Default) { f(it) } }.awaitAll()
+    map { async(Dispatchers.IO) { f(it) } }.awaitAll()
 }

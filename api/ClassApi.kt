@@ -1,9 +1,8 @@
-package api
+package metautils.api
 
 import codegeneration.ClassAccess
 import codegeneration.MethodAccess
 import codegeneration.Visibility
-import metautils.api.*
 import org.objectweb.asm.tree.InnerClassNode
 import metautils.signature.TypeArgumentDeclaration
 import metautils.util.QualifiedName
@@ -29,8 +28,7 @@ data class ClassApi(
     val methods: Collection<Method>,
     val fields: Collection<Field>,
     val innerClasses: List<ClassApi>,
-    val outerClass: ClassApi?,
-    val asmInnerClasses: List<InnerClassNode>
+    val outerClass: ClassApi?
 ) : Visible {
 
     override fun toString(): String {

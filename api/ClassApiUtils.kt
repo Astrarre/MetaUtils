@@ -1,7 +1,6 @@
 package metautils.api
 
-import api.ClassApi
-import api.Visible
+import abstractor.TargetSelector
 import codegeneration.Public
 import codegeneration.Visibility
 import codegeneration.isAbstract
@@ -9,9 +8,7 @@ import codegeneration.isInterface
 import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.ObjectType
 import metautils.signature.*
-import metautils.util.ClasspathIndex
-import metautils.util.applyIf
-import metautils.util.toQualifiedName
+import metautils.util.*
 
 val ClassApi.isFinal get() = access.isFinal
 val ClassApi.variant get() = access.variant
@@ -21,7 +18,8 @@ val ClassApi.Method.isAbstract get() = access.isAbstract
 val ClassApi.isInterface get() = variant.isInterface
 val ClassApi.isAbstract get() = variant.isAbstract
 val ClassApi.isInnerClass get() = outerClass != null
-val Visible.isPublicApi get() = isPublic || visibility == Visibility.Protected
+val Visible.isPublicApiAsOutermostMember get() = isPublic || isProtected
+val ClassApi.isPublicApi get() = outerClassesToThis().all { it.isPublicApiAsOutermostMember }
 val Visible.isPublic get() = visibility == Visibility.Public
 val Visible.isProtected get() = visibility == Visibility.Protected
 val ClassApi.Method.isConstructor get() = name == "<init>"
@@ -32,6 +30,9 @@ fun ClassApi.Method.getJvmDescriptor() = MethodDescriptor(
 
 fun ClassApi.Method.getJvmParameters() = parameters.map { (_, type) -> type.type.toJvmType() }
 
+
+//fun ClassApi.getFieldsAccessibleAsPublicApi() = fields
+//    .filter {  }
 
 /**
  * Goes from top to bottom
@@ -74,3 +75,37 @@ fun ClassApi.visitThisAndInnerClasses(visitor: (ClassApi) -> Unit) {
 
 @OptIn(ExperimentalStdlibApi::class)
 fun ClassApi.allInnerClassesAndThis() = buildList { visitThisAndInnerClasses { add(it) } }
+
+
+fun ClassApi.getAllReferencedClasses(selector: TargetSelector): List<QualifiedName> {
+    val list = mutableListOf<QualifiedName>()
+    visitReferencedClasses(selector) { list.add(it) }
+    return list
+}
+
+fun ClassApi.visitReferencedClasses(
+    selector: TargetSelector,
+    visitor: (QualifiedName) -> Unit
+) {
+    annotations.forEach { it.visitNames(visitor) }
+    visitor(name)
+    typeArguments.forEach { it.visitNames(visitor) }
+    superClass?.visitNames(visitor)
+    superInterfaces.forEach { it.visitNames(visitor) }
+    methods.forEach { if (selector.methods(this, it).isAbstracted) it.visitReferencedClasses(visitor) }
+    fields.forEach { if (selector.fields(this, it).isAbstracted) it.type.visitNames(visitor) }
+    innerClasses.forEach {
+        if (selector.classes(it)) it.visitReferencedClasses(selector, visitor)
+    }
+}
+
+
+fun ClassApi.Method.visitReferencedClasses(visitor: (QualifiedName) -> Unit) {
+    returnType.visitNames(visitor)
+    parameters.values.forEach { it.visitNames(visitor) }
+    typeArguments.forEach { it.visitNames(visitor) }
+    throws.forEach { it.visitNames(visitor) }
+}
+
+fun ClassApi.Method.getAllReferencedClassesRecursively() = mutableListOf<QualifiedName>()
+    .apply { visitReferencedClasses { add(it) } }

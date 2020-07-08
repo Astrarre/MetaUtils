@@ -2,18 +2,15 @@
 
 package metautils.api
 
-import api.*
 import codegeneration.ClassAccess
 import codegeneration.ClassVariant
 import codegeneration.MethodAccess
 import codegeneration.Visibility
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import metautils.asm.*
 import metautils.descriptor.*
 import metautils.signature.*
 import org.objectweb.asm.tree.AnnotationNode
-import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
 import org.objectweb.asm.tree.MethodNode
 import metautils.signature.fromRawClassString
@@ -21,7 +18,6 @@ import metautils.signature.noAnnotations
 import metautils.signature.toRawGenericType
 import metautils.util.*
 import java.nio.file.Path
-import kotlin.system.measureTimeMillis
 
 fun ClassApi.Companion.readFromJar(jarPath: Path, filter: (Path) -> Boolean): Collection<ClassApi> {
     require(jarPath.hasExtension(".jar")) { "Specified path $jarPath does not point to a jar" }
@@ -133,8 +129,7 @@ private fun readSingularClass(
         ),
         isStatic = isStatic,
         typeArguments = signature.typeArguments ?: listOf(),
-        annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations),
-        asmInnerClasses = classNode.innerClasses
+        annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations)
     )
 
     // We need to create the inner classes after creating the classapi, so we can specify what is their outer class.
