@@ -32,7 +32,7 @@ data class ClassApi(
 ) : Visible {
 
     override fun toString(): String {
-        return visibility.toString() + "static".includeIf(isStatic) + "final".includeIf(isFinal) + name.shortName
+        return visibility.toString() + "static ".includeIf(isStatic) + "final ".includeIf(isFinal) + name.shortName
     }
 
     companion object;

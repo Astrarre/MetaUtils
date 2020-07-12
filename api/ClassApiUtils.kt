@@ -30,10 +30,6 @@ fun ClassApi.Method.getJvmDescriptor() = MethodDescriptor(
 
 fun ClassApi.Method.getJvmParameters() = parameters.map { (_, type) -> type.type.toJvmType() }
 
-
-//fun ClassApi.getFieldsAccessibleAsPublicApi() = fields
-//    .filter {  }
-
 /**
  * Goes from top to bottom
  */
@@ -58,15 +54,14 @@ fun ClassApi.asJvmType() = ObjectType(name)
 
 fun ClassApi.isSamInterface() = isInterface && methods.filter { it.isAbstract }.size == 1
 
-//fun ClassApi.isThrowable(index: ClasspathIndex) = index.doesClassEventuallyExtend(name, ThrowableName)
-private val ThrowableName = "java/lang/Throwable".toQualifiedName(dotQualified = false)
-
-
 fun ClassApi.getSignature(): ClassSignature = ClassSignature(
     typeArguments.applyIf<List<TypeArgumentDeclaration>?>(typeArguments.isEmpty()) { null },
     superClass?.type ?: JavaLangObjectGenericType,
     superInterfaces.map { it.type }
 )
+
+fun ClassApi.Method.uniqueIdentifier() = name + getJvmDescriptor().classFileName
+
 
 fun ClassApi.visitThisAndInnerClasses(visitor: (ClassApi) -> Unit) {
     visitor(this)
@@ -95,9 +90,10 @@ fun ClassApi.visitReferencedClasses(
     methods.forEach { if (selector.methods(this, it).isAbstracted) it.visitReferencedClasses(visitor) }
     fields.forEach { if (selector.fields(this, it).isAbstracted) it.type.visitNames(visitor) }
     innerClasses.forEach {
-        if (selector.classes(it)) it.visitReferencedClasses(selector, visitor)
+        if (selector.classes(it).isAbstracted) it.visitReferencedClasses(selector, visitor)
     }
 }
+
 
 
 fun ClassApi.Method.visitReferencedClasses(visitor: (QualifiedName) -> Unit) {

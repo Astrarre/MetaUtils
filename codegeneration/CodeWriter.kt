@@ -72,7 +72,7 @@ internal open class JavaCodeWriter : CodeWriter() {
         is AnnotationValue.ClassType -> value.type.toFormattedString().mapString { "$it.class" }
     }
 
-    private fun JvmPrimitiveType.toFormat() = when(this) {
+    private fun JvmPrimitiveType.toFormat() = when (this) {
         JvmPrimitiveType.Byte -> "byte"
         JvmPrimitiveType.Char -> "char"
         JvmPrimitiveType.Double -> "double"
@@ -83,7 +83,7 @@ internal open class JavaCodeWriter : CodeWriter() {
         JvmPrimitiveType.Boolean -> "boolean"
     }
 
-    private fun JvmType.toFormattedString() : FormattedString = when(this){
+    private fun JvmType.toFormattedString(): FormattedString = when (this) {
         is JvmPrimitiveType -> toFormat().format
         is ObjectType -> TYPE_FORMAT.formatType(toRawJavaType())
         is ArrayType -> componentType.toFormattedString().mapString { "$it[]" }
@@ -175,8 +175,18 @@ private fun ClassGenericType.toTypeName(): TypeName {
                     outerRawType.nestedClass(innerClasses[0].name),
                     *innerClasses[0].typeArguments.toTypeName().toTypedArray()
                 )
-                // This would require pretty complicated handling in the general case, thanks jake wharton
-                else -> error("2-deep inner classes with a type argument only in a nested class are not expected")
+                else -> {
+                    if (innerClasses[0].typeArguments == null) {
+                        assert(innerClasses[1].typeArguments != null)
+                        ParameterizedTypeName.get(
+                            outerRawType.nestedClass(innerClasses[0].name).nestedClass(innerClasses[1].name),
+                            *innerClasses[1].typeArguments.toTypeName().toTypedArray()
+                        )
+                    } else {
+                        // This would require pretty complicated handling in the general case, thanks jake wharton
+                        error("2-deep inner classes with a type argument in the middle class is not expected")
+                    }
+                }
             }
 
         } else {
