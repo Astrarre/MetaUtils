@@ -27,6 +27,9 @@ data class MethodSignature(
     val returnType: GenericReturnType,
     val throwsSignatures: List<ThrowableType>
 ) : Signature {
+    init {
+        check(typeArguments == null || typeArguments.isNotEmpty())
+    }
     companion object;
     override fun toString(): String = "<${typeArguments?.joinToString(", ")}> ".includeIf(typeArguments != null) +
             "(${parameterTypes.joinToString(", ")}): $returnType" +

@@ -187,7 +187,9 @@ private class AsmGeneratedClass(
         val genericsInvolved = typeArguments.isNotEmpty() || parameters.any { it.type.type.hasGenericsInvolved() }
                 || returnType.type.hasGenericsInvolved()
         val signature = if (genericsInvolved) {
-            MethodSignature(typeArguments, parameters.map { it.type.type }, returnType.type, throws.generics())
+            MethodSignature(typeArguments.let { if(it.isEmpty()) null else it },
+                parameters.map { it.type.type }, returnType.type, throws.generics()
+            )
         } else null
 
         classWriter.writeMethod(

@@ -5,6 +5,7 @@ import java.nio.charset.Charset
 import java.nio.file.*
 import java.util.jar.JarOutputStream
 import kotlin.streams.asSequence
+import kotlin.streams.toList
 
 fun Path.exists() = Files.exists(this)
 fun Path.deleteIfExists() = Files.deleteIfExists(this)
@@ -12,6 +13,7 @@ fun Path.delete() = Files.delete(this)
 fun Path.deleteRecursively() = toFile().deleteRecursively()
 inline fun <T> Path.openJar(usage: (FileSystem) -> T): T = FileSystems.newFileSystem(this, null).use(usage)
 fun Path.walk(): Sequence<Path> = Files.walk(this).asSequence()
+
 //fun Path.walk(): Sequence<Path> = Files.walk(this).asSequence()
 fun <T> Path.walkJar(usage: (Sequence<Path>) -> T): T = openJar { usage(it.getPath("/").walk()) }
 fun Path.createJar(contents: (JarOutputStream) -> Unit = {}) =
@@ -23,15 +25,29 @@ fun Path.createDirectories(): Path = Files.createDirectories(this)
 fun Path.createParentDirectories(): Path = parent.createDirectories()
 fun Path.inputStream(): InputStream = Files.newInputStream(this)
 fun Path.writeBytes(bytes: ByteArray): Path = Files.write(this, bytes)
-fun Path.writeString(str : String): Path = Files.write(this, str.toByteArray())
+fun Path.writeString(str: String): Path = Files.write(this, str.toByteArray())
 fun Path.readToString() = Files.readAllBytes(this).toString(Charset.defaultCharset())
 inline fun openJars(jar1: Path, jar2: Path, jar3: Path, usage: (FileSystem, FileSystem, FileSystem) -> Unit) =
     jar1.openJar { j1 -> jar2.openJar { j2 -> jar3.openJar { j3 -> usage(j1, j2, j3) } } }
 
 fun Path.isClassfile() = hasExtension(".class")
 fun Path.isExecutableClassfile() = isClassfile() && fileName.toString() != "module-info.class"
-fun Path.directChildren() = Files.list(this).asSequence()
-fun Path.recursiveChildren() = Files.walk(this).asSequence()
+fun Path.directChildren() = Files.list(this).toList()
+fun Path.recursiveChildren() = Files.walk(this).toList()
+//inline fun <T> Path.recursiveChildren(usage: (Sequence<Path>) -> T): T = Files.walk(this).use {
+//    usage(it.asSequence())
+//}
+//
+//inline fun Path.forEachRecursiveChild(usage: (Path) -> Unit){
+//    recursiveChildren { it.forEach(usage) }
+//}
+
+//inline fun Path.forEachRecursiveChild(usage: (Path) -> Unit){
+//    recursiveChildren { it.forEach(usage) }
+//}
+
+
+
 fun Path.hasExtension(extension: String) = toString().endsWith(extension)
 
 fun Path.unzipJar(

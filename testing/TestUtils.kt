@@ -20,23 +20,22 @@ fun getResource(path: String): Path = Paths.get(
 fun verifyClassFiles(dir: Path, classpath: List<Path>) {
     require(dir.isDirectory())
 
-    val classLoader = URLClassLoader(
+    URLClassLoader(
         arrayOf(dir.toUri().toURL()) + classpath.map { it.toUri().toURL() }
         /* , this::class.java.classLoader*/
-    )
-
-    dir.recursiveChildren().forEach {
-        if (!it.isClassfile()) return@forEach
-        val relativePath = dir.relativize(it)
-        val className = relativePath.toString().replace(File.separator, ".").removeSuffix(".class")
-        try {
-            Class.forName(className, false, classLoader)
-        } catch (e: Throwable) {
-            println("Error in class $className")
-            throw e
+    ).use { classLoader ->
+        dir.recursiveChildren().forEach {
+            if (!it.isClassfile()) return@forEach
+            val relativePath = dir.relativize(it)
+            val className = relativePath.toString().replace(File.separator, ".").removeSuffix(".class")
+            try {
+                Class.forName(className, false, classLoader)
+            } catch (e: Throwable) {
+                println("Error in class $className")
+                throw e
+            }
         }
     }
-
 }
 
 

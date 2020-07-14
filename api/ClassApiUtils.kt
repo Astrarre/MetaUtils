@@ -1,5 +1,7 @@
 package metautils.api
 
+import abstractor.ClassAbstractionType
+import abstractor.IAbstractionType
 import abstractor.TargetSelector
 import codegeneration.Public
 import codegeneration.Visibility
@@ -8,7 +10,10 @@ import codegeneration.isInterface
 import metautils.descriptor.MethodDescriptor
 import metautils.descriptor.ObjectType
 import metautils.signature.*
-import metautils.util.*
+import metautils.util.QualifiedName
+import metautils.util.applyIf
+import metautils.util.values
+import metautils.util.visitNames
 
 val ClassApi.isFinal get() = access.isFinal
 val ClassApi.variant get() = access.variant
@@ -87,13 +92,39 @@ fun ClassApi.visitReferencedClasses(
     typeArguments.forEach { it.visitNames(visitor) }
     superClass?.visitNames(visitor)
     superInterfaces.forEach { it.visitNames(visitor) }
-    methods.forEach { if (selector.methods(this, it).isAbstracted) it.visitReferencedClasses(visitor) }
-    fields.forEach { if (selector.fields(this, it).isAbstracted) it.type.visitNames(visitor) }
+    val classAbstractionType = selector.classes(this)
+    methods.forEach {
+        if (willBeReferenced(selector.methods(this, it), it, classAbstractionType)) {
+            it.visitReferencedClasses(visitor)
+        }
+    }
+    fields.forEach {
+        if (willBeReferenced(selector.fields(this, it), it, classAbstractionType)) {
+            it.type.visitNames(visitor)
+        }
+    }
     innerClasses.forEach {
-        if (selector.classes(it).isAbstracted) it.visitReferencedClasses(selector, visitor)
+        if (willBeReferenced(selector.classes(this), it, classAbstractionType)) {
+            it.visitReferencedClasses(selector, visitor)
+        }
     }
 }
 
+private fun willBeReferenced(
+    memberAbstractionType: IAbstractionType,
+    member: Visible,
+    parentClassAbstractionType: ClassAbstractionType
+): Boolean = when {
+    member.isPublic -> {
+        memberAbstractionType.addInInterface && parentClassAbstractionType.addInInterface
+    }
+    member.isProtected -> {
+        memberAbstractionType.addInBaseclass && parentClassAbstractionType.addInBaseclass
+    }
+    else -> false
+}
+
+//private fun Visible.is
 
 
 fun ClassApi.Method.visitReferencedClasses(visitor: (QualifiedName) -> Unit) {
