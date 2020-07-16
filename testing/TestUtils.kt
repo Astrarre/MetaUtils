@@ -2,20 +2,42 @@ package metautils.testing
 
 import metautils.util.*
 import java.io.File
+import java.net.URI
 import java.net.URLClassLoader
+import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.nio.file.Paths
 
-private class DummyClass
+@PublishedApi internal class DummyClass
 
-fun getResource(path: String): Path = Paths.get(
-    DummyClass::class.java.classLoader.getResource("dummyResource")!!.toURI()
-).parent.resolve(path).also {
+
+inline fun getResources(path1: String, path2: String, usage: (Path, Path) -> Unit) {
+    getResource(path1) { r1 ->
+        getResource(path2) { r2 ->
+            usage(r1, r2)
+        }
+    }
+}
+
+inline fun <T> getResource(path: String, usage: (Path) -> T): T {
+    val classLoader = DummyClass::class.java.classLoader
+    val uri = classLoader.getResource("dummyResource")!!.toURI()
+    return uri.open { usage(Paths.get(uri).resolveSpecificResource(path)) }
+}
+
+@PublishedApi internal inline fun <T> URI.open(usage: (URI) -> T): T {
+    return if (scheme == "jar") FileSystems.newFileSystem(this, mapOf("create" to "true")).use {
+        usage(this)
+    } else usage(this)
+}
+
+@PublishedApi internal fun Path.resolveSpecificResource(path: String) = parent.resolve(path).also {
     check(it.exists()) {
-        "Resource '$path' at $it does not exist. Other resources in resources directory ${it.parent}: " + it.parent.directChildren()
+        "Resource '$this' at $it does not exist. Other resources in resources directory ${it.parent}: " + it.parent.directChildren()
             .toList()
     }
 }
+
 
 fun verifyClassFiles(dir: Path, classpath: List<Path>) {
     require(dir.isDirectory())
