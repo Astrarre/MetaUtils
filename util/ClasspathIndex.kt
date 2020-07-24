@@ -39,7 +39,7 @@ class ClasspathIndex @PublishedApi internal constructor(
     AutoCloseable {
 
     companion object {
-        inline fun <T> index(
+         fun <T> index(
             classPath: List<Path>, additionalEntries: Map<QualifiedName, ClassEntry>,
             usage: (ClasspathIndex) -> T
         ): T = ClasspathIndex(classPath, additionalEntries).let {
