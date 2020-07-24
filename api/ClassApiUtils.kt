@@ -43,7 +43,7 @@ fun ClassApi.outerClassesToThis(): List<ClassApi> = buildList { visitThisAndOute
 private fun ClassApi.outerClassCount() = outerClassesToThis().size - 1
 private inline fun ClassApi.visitThisAndOuterClasses(visitor: (ClassApi) -> Unit) {
     visitor(this)
-    if (outerClass != null) visitor(outerClass)
+    if (outerClass != null) visitor(outerClass!!)
 }
 
 val ClassApi.Method.isVoid get() = returnType.type == GenericReturnType.Void

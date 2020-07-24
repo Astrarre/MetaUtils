@@ -30,9 +30,17 @@ data class ClassApi(
     val methods: Collection<Method>,
     val fields: Collection<Field>,
     val innerClasses: List<ClassApi>,
-    val outerClass: ClassApi?
-) : Visible, Tree by branches(typeArguments, superInterfaces, methods, fields, superClass, outerClass),
+//    val outerClass: ClassApi?,
+    private var classInFieldForDataClassCopying: ClassApi? = null
+) : Visible, Tree by branches(typeArguments, superInterfaces, methods, fields, superClass/*, outerClass*/),
     GraphNode {
+
+    val outerClass : ClassApi? get() = classInFieldForDataClassCopying
+
+    internal fun init(classIn: ClassApi?) {
+        this.classInFieldForDataClassCopying = classIn
+    }
+
     override val presentableName: String
         get() = name.presentableName
     override val globallyUniqueIdentifier: String
@@ -74,7 +82,7 @@ data class ClassApi(
         val throws: List<JavaThrowableType>,
         val access: MethodAccess,
         // For data class copying
-        override var classInField : ClassApi? = null
+        override var classInField: ClassApi? = null
     ) : Member(), Tree by branches(parameters.values, typeArguments, throws, returnType) {
         override fun equals(other: Any?): Boolean = super.equals(other)
         override fun hashCode(): Int = super.hashCode()
@@ -88,7 +96,7 @@ data class ClassApi(
                         .includeIf(classIn.methods.any { it != this && it.name == name }) + ")"
 
         override val globallyUniqueIdentifier: String by lazy { classIn.globallyUniqueIdentifier + "#" + locallyUniqueIdentifier }
-         val locallyUniqueIdentifier :String by lazy {name + getJvmDescriptor().classFileName}
+        val locallyUniqueIdentifier: String by lazy { name + getJvmDescriptor().classFileName }
 
         override val isStatic = access.isStatic
         override val visibility = access.visibility
@@ -101,7 +109,7 @@ data class ClassApi(
         override val visibility: Visibility,
         val isFinal: Boolean,
         // For data class copying
-        override var classInField : ClassApi? = null
+        override var classInField: ClassApi? = null
     ) : Member(), Tree by branch(type) {
         override fun equals(other: Any?): Boolean = super.equals(other)
         override fun hashCode(): Int = super.hashCode()

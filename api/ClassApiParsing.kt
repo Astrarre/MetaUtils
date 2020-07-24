@@ -57,7 +57,7 @@ private suspend fun Sequence<Path>.readFromSequence(rootPath: Path): Collection<
 //            .filter { "Concrete" in it.toString() }
     .parallelMap {
 //        println("Processing class $it")
-        readSingularClass(rootPath, it, outerClass = null, isStatic = false, isProtected = false)
+        readSingularClass(rootPath, it, nonStaticOuterClassTypeArgs = listOf(), isStatic = false, isProtected = false)
     }
 
 
@@ -65,7 +65,9 @@ private suspend fun Sequence<Path>.readFromSequence(rootPath: Path): Collection<
 private fun readSingularClass(
     rootPath: Path,
     path: Path,
-    outerClass: ClassApi?,
+    // Non-static inner classes can reference the type arguments of their parent class so we need that info
+    nonStaticOuterClassTypeArgs: Collection<TypeArgumentDeclaration>,
+//    outerClass: ClassApi?,
     isStatic: Boolean,
     isProtected: Boolean
 ): ClassApi {
@@ -74,14 +76,18 @@ private fun readSingularClass(
     val classNode = readToClassNode(path)
 
     // Need to pass the type args of outer classes to be able to resolve type variables in this class
-    val nonStaticOuterClassTypeArgs = if (outerClass == null) mapOf()
-    else outerClass.outerClassesToThis()
-        .filter { !it.isStatic }
-        .flatMap { classApi -> classApi.typeArguments.map { it.name to it } }
-        .toMap()
+//    val nonStaticOuterClassTypeArgs = if (outerClass == null) mapOf()
+//    else outerClass.outerClassesToThis()
+//        .filter { !it.isStatic }
+//        .flatMap { classApi -> classApi.typeArguments.map { it.name to it } }
+//        .toMap()
+
+    val outerClassTypeArgsMap = nonStaticOuterClassTypeArgs.map { it.name to it }.toMap()
 
     val signature = if (classNode.signature != null) {
-        ClassSignature.readFrom(classNode.signature, nonStaticOuterClassTypeArgs)
+        ClassSignature.readFrom(classNode.signature,
+            outerClassTypeArgs = outerClassTypeArgsMap
+        )
     } else {
         ClassSignature(
             superClass = ClassGenericType.fromRawClassString(classNode.superName),
@@ -93,7 +99,7 @@ private fun readSingularClass(
     }
 
     val classTypeArgMap = (signature.typeArguments?.map { it.name to it }?.toMap() ?: mapOf()) +
-            nonStaticOuterClassTypeArgs
+            outerClassTypeArgsMap
 
     val methods = classNode.methods.filter { !it.isSynthetic }
         .map { readMethod(it, /*classNode, */classTypeArgs = classTypeArgMap) }
@@ -105,6 +111,20 @@ private fun readSingularClass(
 //    val innerClasses = classNode.innerClasses.map { it.name to it }.toMap()
     val innerClassShortName = with(fullClassName.shortName.components) { if (size == 1) null else last() }
 
+    val typeArguments = signature.typeArguments ?: listOf()
+    val nonStaticTypeArgs = nonStaticOuterClassTypeArgs + if(isStatic) listOf() else typeArguments
+    val innerClasses = classNode.innerClasses
+        .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
+        .map {
+            readSingularClass(
+                rootPath,
+                rootPath.resolve("${it.name}.class"),
+                nonStaticOuterClassTypeArgs = nonStaticTypeArgs,
+                isStatic = it.isStatic,
+                isProtected = it.isProtected
+            )
+        }
+
     val classApi = ClassApi(
         name = fullClassName,
         superClass = if (classNode.superName == JavaLangObjectString) null else {
@@ -112,8 +132,8 @@ private fun readSingularClass(
         },
         superInterfaces = signature.superInterfaces.map { JavaClassType(it, annotations = listOf()) },
         methods = methods.toSet(), fields = fields.toSet(),
-        innerClasses = listOf(), // Initialized further down
-        outerClass = outerClass,
+        innerClasses = innerClasses,
+//        outerClass = outerClass,
         visibility = if (isProtected) Visibility.Protected else classNode.visibility,
         access = ClassAccess(
             variant = with(classNode) {
@@ -134,20 +154,22 @@ private fun readSingularClass(
 
     classApi.methods.forEach { it.init(classApi) }
     classApi.fields.forEach { it.init(classApi) }
+    classApi.innerClasses.forEach { it.init(classApi) }
+    return classApi
 
     // We need to create the inner classes after creating the classapi, so we can specify what is their outer class.
-    return classApi.copy(innerClasses = classNode.innerClasses
-        .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
-        .map {
-            readSingularClass(
-                rootPath,
-                rootPath.resolve("${it.name}.class"),
-                classApi,
-                isStatic = it.isStatic,
-                isProtected = it.isProtected
-            )
-        }
-    )
+//    return classApi.copy(innerClasses = classNode.innerClasses
+//        .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }
+//        .map {
+//            readSingularClass(
+//                rootPath,
+//                rootPath.resolve("${it.name}.class"),
+//                classApi,
+//                isStatic = it.isStatic,
+//                isProtected = it.isProtected
+//            )
+//        }
+//    )
 }
 
 private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<AnnotationNode>?): List<JavaAnnotation> {
