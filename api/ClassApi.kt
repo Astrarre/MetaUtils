@@ -1,16 +1,18 @@
 package metautils.api
 
+import abstractor.GraphNode
 import codegeneration.ClassAccess
 import codegeneration.MethodAccess
 import codegeneration.Visibility
-import org.objectweb.asm.tree.InnerClassNode
 import metautils.signature.TypeArgumentDeclaration
-import metautils.util.QualifiedName
-import metautils.util.includeIf
+import metautils.signature.toJvmType
+import metautils.util.*
 
 interface Visible {
     val visibility: Visibility
 }
+
+//TODO: get rid of all things that accept both classapi and member, that's not needed anymore
 
 
 /**
@@ -29,33 +31,64 @@ data class ClassApi(
     val fields: Collection<Field>,
     val innerClasses: List<ClassApi>,
     val outerClass: ClassApi?
-) : Visible {
+) : Visible, Tree by branches(typeArguments, superInterfaces, methods, fields, superClass, outerClass),
+    GraphNode {
+    override val presentableName: String
+        get() = name.presentableName
+    override val globallyUniqueIdentifier: String
+        get() = name.toSlashQualifiedString()
 
     override fun toString(): String {
         return visibility.toString() + "static ".includeIf(isStatic) + "final ".includeIf(isFinal) + name.shortName
     }
 
-    companion object;
+    companion object {
+//        val Empty = ClassApi(
+//            listOf(), Visibility.Public, ClassAccess(false, ClassVariant.ConcreteClass), false,
+//            QualifiedName.Empty, listOf(), null, listOf(), listOf(), listOf(), listOf(), null
+//        )
+    }
 
 
-    abstract class Member : Visible {
+    abstract class Member : Visible, GraphNode {
         abstract val name: String
+        val classIn: ClassApi get() = classInField!!
+
+        protected abstract var classInField: ClassApi?
+
+        // No other way of doing this because it's a recursive definition
+        internal fun init(classIn: ClassApi) {
+            classInField = classIn
+        }
 
         //        abstract val signature: Signature
         abstract val isStatic: Boolean
     }
 
 
-    data class  Method(
+    data class Method(
         override val name: String,
         val returnType: JavaReturnType,
         val parameters: List<Pair<String, AnyJavaType>>,
         val typeArguments: List<TypeArgumentDeclaration>,
         val throws: List<JavaThrowableType>,
-        val access: MethodAccess
-    ) : Member() {
+        val access: MethodAccess,
+        // For data class copying
+        override var classInField : ClassApi? = null
+    ) : Member(), Tree by branches(parameters.values, typeArguments, throws, returnType) {
+        override fun equals(other: Any?): Boolean = super.equals(other)
+        override fun hashCode(): Int = super.hashCode()
+
         override fun toString() = "static ".includeIf(isStatic) +
-                "$name(${parameters.map { (name, type) -> "$name: $type" }.joinToString(", ")}): $returnType"
+                "$name(${parameters.joinToString { (name, type) -> "$name: $type" }}): $returnType"
+
+        override val presentableName: String
+            get() = "$name(" +
+                    parameters.values.joinToString { it.toJvmType().toString() }
+                        .includeIf(classIn.methods.any { it != this && it.name == name }) + ")"
+
+        override val globallyUniqueIdentifier: String by lazy { classIn.globallyUniqueIdentifier + "#" + locallyUniqueIdentifier }
+         val locallyUniqueIdentifier :String by lazy {name + getJvmDescriptor().classFileName}
 
         override val isStatic = access.isStatic
         override val visibility = access.visibility
@@ -66,9 +99,18 @@ data class ClassApi(
         val type: AnyJavaType,
         override val isStatic: Boolean,
         override val visibility: Visibility,
-        val isFinal: Boolean
-    ) : Member() {
+        val isFinal: Boolean,
+        // For data class copying
+        override var classInField : ClassApi? = null
+    ) : Member(), Tree by branch(type) {
+        override fun equals(other: Any?): Boolean = super.equals(other)
+        override fun hashCode(): Int = super.hashCode()
+
         override fun toString() = "static ".includeIf(isStatic) + "$name: $type"
+        override val presentableName: String
+            get() = name
+        override val globallyUniqueIdentifier by lazy { classIn.globallyUniqueIdentifier + "." + locallyUniqueIdentifier }
+        val locallyUniqueIdentifier by lazy { name + type.toJvmType().classFileName }
     }
 
 

@@ -1,16 +1,16 @@
 package metautils.util
 
+import abstractor.GraphNode
 import java.nio.file.Path
 import java.nio.file.Paths
 
 data class QualifiedName(
     // Dot or slash qualified
     val packageName: PackageName?, val shortName: ShortClassName
-) {
+) : Leaf, GraphNode {
     companion object {
         val Empty = QualifiedName(null, ShortClassName(listOf("")))
     }
-
 
     private fun toQualified(packageSeparator: String, classSeparator: String): String =
         if (packageName == null) shortName.toDollarQualifiedString() else
@@ -31,6 +31,11 @@ data class QualifiedName(
         return toQualified(packageSeparator, classSeparator)
     }
 
+    override val presentableName: String
+        get() = shortName.toDotQualifiedString()
+    override val globallyUniqueIdentifier: String
+        get() = toSlashQualifiedString()
+
     override fun toString(): String = toDotQualifiedString(dollarQualified = true)
 
     fun packageStartsWith(vararg startingComponents: String): Boolean =
@@ -42,6 +47,16 @@ fun QualifiedName.innerClass(name: String) = copy(
 )
 
 fun QualifiedName.outerClass() = copy(shortName = shortName.outerClass())
+
+//fun QualifiedName.outermostClass() = copy(shortName = ShortClassName(listOf(shortName.outerMostClass())))
+private fun QualifiedName.visitThisToOuterClasses(visitor: (QualifiedName) -> Unit) {
+    visitor(this)
+    if (shortName.components.size > 1) outerClass().visitThisToOuterClasses(visitor)
+}
+
+fun QualifiedName.thisToOuterClasses(): List<QualifiedName> = mutableListOf<QualifiedName>().apply {
+    visitThisToOuterClasses { add(it) }
+}
 
 
 fun String.toPackageName(dotQualified: Boolean): PackageName {

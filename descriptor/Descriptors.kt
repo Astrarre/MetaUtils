@@ -1,20 +1,19 @@
 package metautils.descriptor
 
-import metautils.util.QualifiedName
-import metautils.util.toQualifiedName
+import metautils.util.*
 
 // Comes directly from the spec https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.2
 typealias FieldDescriptor = FieldType
 typealias JvmType = FieldType
 
-sealed class Descriptor(val classFileName: String) {
+sealed class Descriptor(val classFileName: String) : Tree {
     override fun equals(other: Any?) = other is Descriptor && other.classFileName == classFileName
     override fun hashCode() = classFileName.hashCode()
 }
 
 
 sealed class ReturnDescriptor(classFileName: String) : Descriptor(classFileName) {
-    object Void : ReturnDescriptor("V") {
+    object Void : ReturnDescriptor("V"), Leaf {
         override fun toString() = "void"
     }
 }
@@ -24,7 +23,7 @@ sealed class FieldType(classFileName: String) : ReturnDescriptor(classFileName) 
 
 }
 
-sealed class JvmPrimitiveType(classFileName: String) : FieldType(classFileName) {
+sealed class JvmPrimitiveType(classFileName: String) : FieldType(classFileName), Leaf {
     object Byte : JvmPrimitiveType("B") {
         override fun toString() = "byte"
     }
@@ -60,8 +59,8 @@ sealed class JvmPrimitiveType(classFileName: String) : FieldType(classFileName) 
 
 
 data class ObjectType(val fullClassName: QualifiedName) :
-    FieldType("L${fullClassName.toSlashQualifiedString()};") {
-    override fun toString() = fullClassName.shortName.toDollarQualifiedString()
+    FieldType("L${fullClassName.toSlashQualifiedString()};"), Tree by branch(fullClassName) {
+    override fun toString() = fullClassName.shortName.toDotQualifiedString()
 
     constructor(qualifiedName: String, dotQualified: Boolean) : this(qualifiedName.toQualifiedName(dotQualified))
 
@@ -75,7 +74,8 @@ data class ObjectType(val fullClassName: QualifiedName) :
 //
 //fun ObjectType.simpleName() = className.substring(className.lastIndexOf("/").let { if (it == -1) 0 else it + 1 })
 
-data class ArrayType(val componentType: FieldType) : FieldType("[" + componentType.classFileName) {
+data class ArrayType(val componentType: FieldType) : FieldType("[" + componentType.classFileName),
+    Tree by branch(componentType) {
     override fun toString() = "$componentType[]"
 }
 
@@ -84,7 +84,8 @@ typealias ParameterDescriptor = FieldType
 data class MethodDescriptor(
     val parameterDescriptors: List<ParameterDescriptor>,
     val returnDescriptor: ReturnDescriptor
-) : Descriptor("(${parameterDescriptors.joinToString("") { it.classFileName }})${returnDescriptor.classFileName}") {
+) : Descriptor("(${parameterDescriptors.joinToString("") { it.classFileName }})${returnDescriptor.classFileName}"),
+    Tree by branches(parameterDescriptors, returnDescriptor) {
     companion object;
     override fun toString() = "(${parameterDescriptors.joinToString(", ")}): $returnDescriptor"
 }

@@ -132,6 +132,9 @@ private fun readSingularClass(
         annotations = parseAnnotations(classNode.visibleAnnotations, classNode.invisibleAnnotations)
     )
 
+    classApi.methods.forEach { it.init(classApi) }
+    classApi.fields.forEach { it.init(classApi) }
+
     // We need to create the inner classes after creating the classapi, so we can specify what is their outer class.
     return classApi.copy(innerClasses = classNode.innerClasses
         .filter { innerClassShortName != it.innerName && it.outerName == classNode.name }

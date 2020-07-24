@@ -28,3 +28,9 @@ fun ReturnDescriptor.byteWidth() = when{
 const val JavaLangObjectString = "java/lang/Object"
 val JavaLangObjectName = JavaLangObjectString.toQualifiedName(dotQualified = false)
 val JavaLangObjectJvmType = ObjectType(JavaLangObjectName)
+
+//fun JvmType.toPresentableString() = when(this){
+//    is JvmPrimitiveType -> toString()
+//    is ObjectType -> TODO()
+//    is ArrayType -> TODO()
+//}

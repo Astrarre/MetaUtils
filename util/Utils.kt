@@ -6,10 +6,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import java.net.URL
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
 import java.nio.file.Path
-import java.util.*
-import kotlin.collections.ArrayList
 
 
 fun String.includeIf(boolean: Boolean) = if (boolean) this else ""
@@ -68,3 +65,27 @@ fun downloadJarFromUrl(url: String, to: Path) {
 suspend fun <A, B> Iterable<A>.parallelMap(f: suspend (A) -> B): List<B> = coroutineScope {
     map { async(Dispatchers.IO) { f(it) } }.awaitAll()
 }
+
+fun <T1 : T, T2 : T, T3 : T, T4 : T, T5 : T, T> combineLists(
+    list1: Collection<T1>?,
+    list2: Collection<T2>?,
+    list3: Collection<T3>?,
+    el1: T4?,
+    el2: T5?
+) = mutableListOf<T>().apply {
+    addAllNullable(list1)
+    addAllNullable(list2)
+    addAllNullable(list3)
+    addNullable(el1)
+    addNullable(el2)
+}
+
+private fun <T> MutableList<T>.addAllNullable(collection: Collection<T>?) {
+    if (collection != null) addAll(collection)
+}
+
+private fun <T> MutableList<T>.addNullable(el: T?) {
+    if (el != null) add(el)
+}
+
+fun <T> Iterable<T>.fastToSet() = if (this is Set<T>) this else toSet()

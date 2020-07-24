@@ -65,7 +65,6 @@ fun ClassApi.getSignature(): ClassSignature = ClassSignature(
     superInterfaces.map { it.type }
 )
 
-fun ClassApi.Method.uniqueIdentifier() = name + getJvmDescriptor().classFileName
 
 
 fun ClassApi.visitThisAndInnerClasses(visitor: (ClassApi) -> Unit) {
@@ -94,12 +93,12 @@ fun ClassApi.visitReferencedClasses(
     superInterfaces.forEach { it.visitNames(visitor) }
     val classAbstractionType = selector.classes(this)
     methods.forEach {
-        if (willBeReferenced(selector.methods(this, it), it, classAbstractionType)) {
+        if (willBeReferenced(selector.methods(it), it, classAbstractionType)) {
             it.visitReferencedClasses(visitor)
         }
     }
     fields.forEach {
-        if (willBeReferenced(selector.fields(this, it), it, classAbstractionType)) {
+        if (willBeReferenced(selector.fields(it), it, classAbstractionType)) {
             it.type.visitNames(visitor)
         }
     }
@@ -134,5 +133,5 @@ fun ClassApi.Method.visitReferencedClasses(visitor: (QualifiedName) -> Unit) {
     throws.forEach { it.visitNames(visitor) }
 }
 
-fun ClassApi.Method.getAllReferencedClassesRecursively() = mutableListOf<QualifiedName>()
-    .apply { visitReferencedClasses { add(it) } }
+//fun ClassApi.Method.getAllReferencedClassesRecursively() = mutableListOf<QualifiedName>()
+//    .apply { visitReferencedClasses { add(it) } }

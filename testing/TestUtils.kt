@@ -4,6 +4,7 @@ import metautils.util.*
 import java.io.File
 import java.net.URI
 import java.net.URLClassLoader
+import java.nio.file.FileSystemAlreadyExistsException
 import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -11,24 +12,28 @@ import java.nio.file.Paths
 @PublishedApi internal class DummyClass
 
 
-inline fun getResources(path1: String, path2: String, usage: (Path, Path) -> Unit) {
-    getResource(path1) { r1 ->
+ fun <T> getResources(path1: String, path2: String, usage: (Path, Path) -> T) :T {
+     return getResource(path1) { r1 ->
         getResource(path2) { r2 ->
-            usage(r1, r2)
+             usage(r1, r2)
         }
     }
 }
 
-inline fun <T> getResource(path: String, usage: (Path) -> T): T {
+ fun <T> getResource(path: String, usage: (Path) -> T): T {
     val classLoader = DummyClass::class.java.classLoader
     val uri = classLoader.getResource("dummyResource")!!.toURI()
     return uri.open { usage(Paths.get(uri).resolveSpecificResource(path)) }
 }
 
 @PublishedApi internal inline fun <T> URI.open(usage: (URI) -> T): T {
-    return if (scheme == "jar") FileSystems.newFileSystem(this, mapOf("create" to "true")).use {
+    return try {
+        if (scheme == "jar") FileSystems.newFileSystem(this, mapOf("create" to true)).use {
+            usage(this)
+        } else usage(this)
+    } catch (e: FileSystemAlreadyExistsException) {
         usage(this)
-    } else usage(this)
+    }
 }
 
 @PublishedApi internal fun Path.resolveSpecificResource(path: String) = parent.resolve(path).also {
