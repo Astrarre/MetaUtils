@@ -4,7 +4,7 @@ import abstractor.ClassAbstractionType
 import abstractor.IAbstractionType
 import abstractor.TargetSelector
 import codegeneration.Public
-import codegeneration.Visibility
+import metautils.codegeneration.Visibility
 import codegeneration.isAbstract
 import codegeneration.isInterface
 import metautils.descriptor.MethodDescriptor

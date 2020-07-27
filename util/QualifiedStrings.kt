@@ -80,6 +80,8 @@ fun String.toQualifiedName(dotQualified: Boolean, dollarQualified: Boolean = tru
     )
 }
 
+fun String.toSlashQualifiedName() = toQualifiedName(dotQualified = false)
+
 fun String.prependToQualified(qualifiedString: PackageName) =
     PackageName(this.prependTo(qualifiedString.components))
 

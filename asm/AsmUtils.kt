@@ -1,6 +1,8 @@
 package metautils.asm
 
 import codegeneration.*
+import metautils.codegeneration.ClassVisibility
+import metautils.codegeneration.Visibility
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes

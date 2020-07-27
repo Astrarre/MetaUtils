@@ -1,8 +1,7 @@
-package codegeneration
+package metautils.codegeneration
 
 import metautils.api.AnyJavaType
 import metautils.api.JavaClassType
-import metautils.codegeneration.JavaCodeWriter
 import metautils.descriptor.JvmType
 import metautils.descriptor.ObjectType
 import metautils.descriptor.ReturnDescriptor
@@ -42,28 +41,28 @@ interface Expression : Receiver
 class VariableExpression(val name: String) : Expression, Assignable, Code()
 class CastExpression(val target: Expression, val castTo: AnyJavaType) : Expression, Code()
 class FieldExpression(val receiver: Receiver, val name: String, val owner: ObjectType, val type: JvmType) : Expression,
-    Assignable, Code()
+        Assignable, Code()
 
 sealed class MethodCall(val parameters: List<Pair<JvmType, Expression>>) : Expression,
-    Statement, Code() {
+        Statement, Code() {
 
     abstract val receiver: Receiver?
 
     class Method(
-        override val receiver: Receiver?,
-        val name: String,
-        parameters: List<Pair<JvmType, Expression>>,
-        val methodAccess: MethodAccess,
-        val receiverAccess: ClassAccess,
-        val returnType: ReturnDescriptor,
-        val owner: ObjectType
+            override val receiver: Receiver?,
+            val name: String,
+            parameters: List<Pair<JvmType, Expression>>,
+            val methodAccess: MethodAccess,
+            val receiverAccess: ClassAccess,
+            val returnType: ReturnDescriptor,
+            val owner: ObjectType
 //        , val dontDoVirtualDispatch: Boolean
     ) : MethodCall(parameters)
 
     class Constructor(
-        override val receiver: Expression?,
-        val constructing: JavaClassType,
-        parameters: List<Pair<JvmType, Expression>>
+            override val receiver: Expression?,
+            val constructing: JavaClassType,
+            parameters: List<Pair<JvmType, Expression>>
     ) : MethodCall(parameters)
 }
 

@@ -11,7 +11,7 @@ interface Tree {
 fun Tree.getDirectChildren() = mutableListOf<Tree>().apply { visitDirectChildren { add(it) } }
 
 fun <T> Tree.mapNames(map: (QualifiedName) -> T): List<T> = mutableListOf<T>().apply { visitNames { add(map(it)) } }
-fun Tree.getContainedNamesRecursively() = mutableListOf<QualifiedName>().apply { visitNames { add(it) } }
+fun Tree.getContainedNamesRecursively() : List<QualifiedName> = mutableListOf<QualifiedName>().apply { visitNames { add(it) } }
 //inline fun <reified T, R> Tree.mapTypeOf(map: (T) -> R): List<R> = mutableListOf<R>().apply { visitNames { add(map(it)) } }
 
 fun Tree.visitNames(visitor: (QualifiedName) -> Unit) {

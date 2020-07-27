@@ -5,14 +5,15 @@ import metautils.util.applyIf
 
 typealias TypeArgDecls = Map<String, TypeArgumentDeclaration>
 
-fun ClassSignature.Companion.readFrom(signature: String, outerClassTypeArgs : TypeArgDecls): ClassSignature =
-    SignatureReader(signature, outerClassTypeArgs).readClass()
+// If the type args are null it won't try to resolve type argument declarations when it can't
+fun ClassSignature.Companion.readFrom(signature: String, outerClassTypeArgs : TypeArgDecls?): ClassSignature =
+    SignatureReader(signature, outerClassTypeArgs.orEmpty(),outerClassTypeArgs != null).readClass()
 
-fun MethodSignature.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls): MethodSignature =
-    SignatureReader(signature, classTypeArgs).readMethod()
+fun MethodSignature.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls?): MethodSignature =
+    SignatureReader(signature, classTypeArgs.orEmpty(),classTypeArgs != null).readMethod()
 
-fun GenericTypeOrPrimitive.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls): FieldSignature =
-    SignatureReader(signature, classTypeArgs).readField()
+fun GenericTypeOrPrimitive.Companion.readFrom(signature: String, classTypeArgs: TypeArgDecls?): FieldSignature =
+    SignatureReader(signature, classTypeArgs.orEmpty(),classTypeArgs != null).readField()
 
 private const val doChecks = true
 
@@ -20,11 +21,14 @@ private val StubTypeArgDecl = TypeArgumentDeclaration("", null, listOf())
 
 @Suppress("NOTHING_TO_INLINE")
 @OptIn(ExperimentalStdlibApi::class)
-private class SignatureReader(private val signature: String, typeVariableDeclarations: TypeArgDecls) {
+private class SignatureReader(private val signature: String, typeVariableDeclarations: TypeArgDecls,
+                              private val reResolveTypeArgumentDeclarations: Boolean) {
     var progressPointer = 0
 
     private val typeArgDeclarations = typeVariableDeclarations.toMutableMap()
-    private var recursiveBoundsExist = false
+    private var couldNotResolveSomeTypeArgumentDecls = false
+
+    private fun shouldReResolve() = couldNotResolveSomeTypeArgumentDecls && reResolveTypeArgumentDeclarations
 
     // In cases where there are recursive type argument bounds, we can't resolve the declarations of the bounds by reading
     // left to right. So after we finish reading we go over the TypeVariables and replace the stub declarations with the
@@ -64,7 +68,7 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
             skip = false
         )
         return ClassSignature(formalTypeParameters, superClassSignature, superInterfaceSignatures)
-            .applyIf(recursiveBoundsExist) { it.reResolveTypeArgumentDeclarations() }
+            .applyIf(shouldReResolve()) { it.reResolveTypeArgumentDeclarations() }
     }
 
     fun readMethod(): MethodSignature {
@@ -78,10 +82,10 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
             skip = false
         )
         return MethodSignature(formalTypeParameters, parameterTypes, returnType, throws)
-            .applyIf(recursiveBoundsExist) { it.reResolveTypeArgumentDeclarations() }
+            .applyIf(shouldReResolve()) { it.reResolveTypeArgumentDeclarations() }
     }
 
-    fun readField(): FieldSignature = readFieldTypeSignature().applyIf(recursiveBoundsExist) { it.reResolve() }
+    fun readField(): FieldSignature = readFieldTypeSignature().applyIf(shouldReResolve()) { it.reResolve() }
 
     private fun readThrowsSignature(): ThrowableType {
         advance('^')
@@ -186,7 +190,7 @@ private class SignatureReader(private val signature: String, typeVariableDeclara
         val declaration = typeArgDeclarations[identifier] ?: run {
             // If we can't find it we assume it's defined later on, which means it's a recursive definition
             // If indeed it is never defined it will throw in reResolveTypeArgumentDeclarations
-            recursiveBoundsExist = true
+            couldNotResolveSomeTypeArgumentDecls = true
             StubTypeArgDecl
         }
         return TypeVariable(identifier, declaration)

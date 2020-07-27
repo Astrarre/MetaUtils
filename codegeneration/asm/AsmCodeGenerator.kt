@@ -177,11 +177,11 @@ private class AsmGeneratedClass(
 
 
     private fun MethodInfo.addMethodImpl(
-        returnType: JavaReturnType,
-        typeArguments: List<TypeArgumentDeclaration>,
-        access: MethodAccess,
-        name: String,
-        bodyPrefix: GeneratedMethod.() -> Unit = {}
+            returnType: JavaReturnType,
+            typeArguments: List<TypeArgumentDeclaration>,
+            access: MethodAccess,
+            name: String,
+            bodyPrefix: GeneratedMethod.() -> Unit = {}
     ) {
         val descriptor = MethodDescriptor(parameters.map { it.type.toJvmType() }, returnType.toJvmType())
         val genericsInvolved = typeArguments.isNotEmpty() || parameters.any { it.type.type.hasGenericsInvolved() }
@@ -223,12 +223,12 @@ private class AsmGeneratedClass(
 
 
     override fun addField(
-        name: String,
-        type: AnyJavaType,
-        visibility: Visibility,
-        isStatic: Boolean,
-        isFinal: Boolean,
-        initializer: Expression?
+            name: String,
+            type: AnyJavaType,
+            visibility: Visibility,
+            isStatic: Boolean,
+            isFinal: Boolean,
+            initializer: Expression?
     ) {
         val genericsInvolved = type.type.hasGenericsInvolved()
         val signature = if (genericsInvolved) type.type else null

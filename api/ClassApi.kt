@@ -1,9 +1,9 @@
 package metautils.api
 
 import abstractor.GraphNode
-import codegeneration.ClassAccess
-import codegeneration.MethodAccess
-import codegeneration.Visibility
+import metautils.codegeneration.ClassAccess
+import metautils.codegeneration.MethodAccess
+import metautils.codegeneration.Visibility
 import metautils.signature.TypeArgumentDeclaration
 import metautils.signature.toJvmType
 import metautils.util.*
@@ -19,19 +19,19 @@ interface Visible {
  * [ClassApi]es use dot.separated.format for the packageName always!
  */
 data class ClassApi(
-    val annotations: List<JavaAnnotation>,
-    override val visibility: Visibility,
-    val access: ClassAccess,
-    val isStatic: Boolean,
-    val name: QualifiedName,
-    val typeArguments: List<TypeArgumentDeclaration>,
-    val superClass: JavaClassType?,
-    val superInterfaces: List<JavaClassType>,
-    val methods: Collection<Method>,
-    val fields: Collection<Field>,
-    val innerClasses: List<ClassApi>,
+        val annotations: List<JavaAnnotation>,
+        override val visibility: Visibility,
+        val access: ClassAccess,
+        val isStatic: Boolean,
+        val name: QualifiedName,
+        val typeArguments: List<TypeArgumentDeclaration>,
+        val superClass: JavaClassType?,
+        val superInterfaces: List<JavaClassType>,
+        val methods: Collection<Method>,
+        val fields: Collection<Field>,
+        val innerClasses: List<ClassApi>,
 //    val outerClass: ClassApi?,
-    private var classInFieldForDataClassCopying: ClassApi? = null
+        private var classInFieldForDataClassCopying: ClassApi? = null
 ) : Visible, Tree by branches(typeArguments, superInterfaces, methods, fields, superClass/*, outerClass*/),
     GraphNode {
 
@@ -75,14 +75,14 @@ data class ClassApi(
 
 
     data class Method(
-        override val name: String,
-        val returnType: JavaReturnType,
-        val parameters: List<Pair<String, AnyJavaType>>,
-        val typeArguments: List<TypeArgumentDeclaration>,
-        val throws: List<JavaThrowableType>,
-        val access: MethodAccess,
+            override val name: String,
+            val returnType: JavaReturnType,
+            val parameters: List<Pair<String, AnyJavaType>>,
+            val typeArguments: List<TypeArgumentDeclaration>,
+            val throws: List<JavaThrowableType>,
+            val access: MethodAccess,
         // For data class copying
-        override var classInField: ClassApi? = null
+            override var classInField: ClassApi? = null
     ) : Member(), Tree by branches(parameters.values, typeArguments, throws, returnType) {
         override fun equals(other: Any?): Boolean = super.equals(other)
         override fun hashCode(): Int = super.hashCode()
@@ -103,13 +103,13 @@ data class ClassApi(
     }
 
     data class Field(
-        override val name: String,
-        val type: AnyJavaType,
-        override val isStatic: Boolean,
-        override val visibility: Visibility,
-        val isFinal: Boolean,
+            override val name: String,
+            val type: AnyJavaType,
+            override val isStatic: Boolean,
+            override val visibility: Visibility,
+            val isFinal: Boolean,
         // For data class copying
-        override var classInField: ClassApi? = null
+            override var classInField: ClassApi? = null
     ) : Member(), Tree by branch(type) {
         override fun equals(other: Any?): Boolean = super.equals(other)
         override fun hashCode(): Int = super.hashCode()

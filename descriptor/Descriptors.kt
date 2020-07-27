@@ -81,7 +81,7 @@ data class ArrayType(val componentType: FieldType) : FieldType("[" + componentTy
 
 typealias ParameterDescriptor = FieldType
 
-data class MethodDescriptor(
+data class MethodDescriptor internal constructor(
     val parameterDescriptors: List<ParameterDescriptor>,
     val returnDescriptor: ReturnDescriptor
 ) : Descriptor("(${parameterDescriptors.joinToString("") { it.classFileName }})${returnDescriptor.classFileName}"),

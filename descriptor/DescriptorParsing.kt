@@ -6,7 +6,7 @@ fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
     require(descriptor.isNotEmpty()) { "A descriptor cannot be an empty string" }
     if (descriptor[0] == '[') return ArrayType(read(descriptor.substring(1)))
     require(descriptor[0] == 'L' && descriptor.last() == ';')
-    { "'$descriptor' is not a descriptor: A field descriptor must be basic, an array ([), or a class (L)" }
+    { "'$descriptor' is not a descriptor: A field descriptor must be primitive, an array ([), or a class (L)" }
 
     // I am unhappy substring copies the entire string
     return ObjectType(descriptor.substring(1, descriptor.length - 1), dotQualified = false)

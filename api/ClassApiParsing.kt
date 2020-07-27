@@ -2,10 +2,10 @@
 
 package metautils.api
 
-import codegeneration.ClassAccess
-import codegeneration.ClassVariant
-import codegeneration.MethodAccess
-import codegeneration.Visibility
+import metautils.codegeneration.ClassAccess
+import metautils.codegeneration.ClassVariant
+import metautils.codegeneration.MethodAccess
+import metautils.codegeneration.Visibility
 import kotlinx.coroutines.runBlocking
 import metautils.asm.*
 import metautils.descriptor.*
@@ -179,47 +179,47 @@ private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<Ann
         else -> visible + invisible
     }
     combined ?: return listOf()
-    return combined.map { parseAnnotation(it) }
+    return combined.map { JavaAnnotation.fromAsmNode(it) }
 }
 
-private fun parseAnnotation(node: AnnotationNode) =
-    JavaAnnotation(FieldType.read(node.desc) as ObjectType, parseRawAnnotationValues(node.values))
-
-private fun parseRawAnnotationValues(keyValues: List<Any>?): Map<String, AnnotationValue> {
-    if (keyValues == null) return mapOf()
-    val map = mutableMapOf<String, Any>()
-    var key: String? = null
-    keyValues.forEachIndexed { index, kv ->
-        if (index % 2 == 0) {
-            // Key
-            key = kv as String
-        } else {
-            // Value
-            map[key!!] = kv
-        }
-    }
-    return map.mapValues { (_, v) -> parseAnnotationValue(v) }
-}
-
-private fun parseAnnotationValue(value: Any): AnnotationValue = when (value) {
-    is Number -> AnnotationValue.Primitive.Num(value)
-    is Boolean -> AnnotationValue.Primitive.Bool(value)
-    is Char -> AnnotationValue.Primitive.Cha(value)
-    is String -> AnnotationValue.Primitive.Str(value)
-    is org.objectweb.asm.Type -> AnnotationValue.ClassType(JvmType.read(value.descriptor))
-    is Array<*> -> {
-        assert(value.size == 2)
-        assert(value[0] is String)
-        @Suppress("UNCHECKED_CAST")
-        value as Array<String>
-
-        val type = JvmType.read(value[0]) as ObjectType
-        AnnotationValue.Enum(type = type, constant = value[1])
-    }
-    is AnnotationNode -> AnnotationValue.Annotation(parseAnnotation(value))
-    is List<*> -> AnnotationValue.Array(value.map { parseAnnotationValue(it!!) })
-    else -> error("Unexpected annotation value '$value' of type '${value::class.qualifiedName}'")
-}
+//private fun parseAnnotation(node: AnnotationNode) =
+//    JavaAnnotation(FieldType.read(node.desc) as ObjectType, parseRawAnnotationValues(node.values))
+//
+//private fun parseRawAnnotationValues(keyValues: List<Any>?): Map<String, AnnotationValue> {
+//    if (keyValues == null) return mapOf()
+//    val map = mutableMapOf<String, Any>()
+//    var key: String? = null
+//    keyValues.forEachIndexed { index, kv ->
+//        if (index % 2 == 0) {
+//            // Key
+//            key = kv as String
+//        } else {
+//            // Value
+//            map[key!!] = kv
+//        }
+//    }
+//    return map.mapValues { (_, v) -> parseAnnotationValue(v) }
+//}
+//
+//private fun parseAnnotationValue(value: Any): AnnotationValue = when (value) {
+//    is Number -> AnnotationValue.Primitive.Num(value)
+//    is Boolean -> AnnotationValue.Primitive.Bool(value)
+//    is Char -> AnnotationValue.Primitive.Cha(value)
+//    is String -> AnnotationValue.Primitive.Str(value)
+//    is org.objectweb.asm.Type -> AnnotationValue.ClassType(JvmType.read(value.descriptor))
+//    is Array<*> -> {
+//        assert(value.size == 2)
+//        assert(value[0] is String)
+//        @Suppress("UNCHECKED_CAST")
+//        value as Array<String>
+//
+//        val type = JvmType.read(value[0]) as ObjectType
+//        AnnotationValue.Enum(type = type, constant = value[1])
+//    }
+//    is AnnotationNode -> AnnotationValue.Annotation(parseAnnotation(value))
+//    is List<*> -> AnnotationValue.Array(value.map { parseAnnotationValue(it!!) })
+//    else -> error("Unexpected annotation value '$value' of type '${value::class.qualifiedName}'")
+//}
 
 
 private fun readField(field: FieldNode, classTypeArgs: TypeArgDecls): ClassApi.Field {

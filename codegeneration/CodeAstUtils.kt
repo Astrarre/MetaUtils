@@ -1,5 +1,8 @@
 package codegeneration
 
+import metautils.codegeneration.ClassVariant
+import metautils.codegeneration.ClassVisibility
+import metautils.codegeneration.Visibility
 import javax.lang.model.element.Modifier
 
 

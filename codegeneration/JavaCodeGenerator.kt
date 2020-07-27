@@ -53,7 +53,7 @@ private fun generateMethod(info: MethodInfo, methodName: String?): MethodSpec.Bu
         JavaGeneratedMethod(this).apply(body)
         addParameters(info.parameters.map { (name, type, javadoc) ->
             ParameterSpec.builder(type.toTypeName(), name.applyIf(!SourceVersion.isName(name)) { it + "_" }).apply {
-                addAnnotations(type.annotations.map { it.toAnnotationSpec() })
+//                addAnnotations(type.annotations.map { it.toAnnotationSpec() })
                 if (javadoc != null) addJavadoc(javadoc)
             }.build()
         })
@@ -112,12 +112,12 @@ class JavaGeneratedClass(
     }
 
     override fun addField(
-        name: String,
-        type: AnyJavaType,
-        visibility: Visibility,
-        isStatic: Boolean,
-        isFinal: Boolean,
-        initializer: Expression?
+            name: String,
+            type: AnyJavaType,
+            visibility: Visibility,
+            isStatic: Boolean,
+            isFinal: Boolean,
+            initializer: Expression?
     ) {
         typeSpec.addField(FieldSpec.builder(type.toTypeName(), name)
             .apply {
@@ -141,7 +141,7 @@ class JavaGeneratedClass(
 
 }
 
-private fun List<JavaType<*>>.toTypeNames() = map { it.toTypeName() }.toTypedArray()
+private fun List<JavaType<*>>.toTypeNames() = map { it.toTypeName(annotate = false) }.toTypedArray()
 
 
 class JavaGeneratedMethod(private val methodSpec: MethodSpec.Builder) : GeneratedMethod {
