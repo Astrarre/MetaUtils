@@ -3,7 +3,6 @@ package metautils.util
 import metautils.asm.readToClassNode
 import metautils.types.jvm.JavaLangObjectName
 import metautils.types.jvm.MethodDescriptor
-import metautils.types.jvm.fromDescriptorString
 import java.lang.reflect.Method
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems

@@ -15,10 +15,10 @@ import org.objectweb.asm.tree.MethodNode
 import metautils.signature.fromRawClassString
 import metautils.signature.noAnnotations
 import metautils.signature.toRawGenericType
+import metautils.types.jvm.FieldDescriptor
 import metautils.types.jvm.JavaLangObjectString
 import metautils.types.jvm.MethodDescriptor
 import metautils.types.jvm.ParameterDescriptor
-import metautils.types.jvm.fromDescriptorString
 import metautils.util.*
 import java.nio.file.Path
 
@@ -227,7 +227,7 @@ private fun parseAnnotations(visible: List<AnnotationNode>?, invisible: List<Ann
 
 private fun readField(field: FieldNode, classTypeArgs: TypeArgDecls): ClassApi.Field {
     val signature = if (field.signature != null) FieldSignature.readFrom(field.signature, classTypeArgs)
-    else FieldDescriptor.read(field.desc).toRawGenericType()
+    else FieldDescriptor.fromDescriptorString(field.desc).toRawGenericType()
 
     return ClassApi.Field(
         name = field.name,
