@@ -1,4 +1,4 @@
-package metautils.descriptor
+package metautils.types.jvm
 
 import metautils.util.*
 
@@ -11,6 +11,17 @@ sealed class Descriptor(val classFileName: String) : Tree {
     override fun hashCode() = classFileName.hashCode()
 }
 
+data class MethodDescriptor internal constructor(
+    val parameterDescriptors: List<ParameterDescriptor>,
+    val returnDescriptor: ReturnDescriptor
+) : Descriptor("(${parameterDescriptors.joinToString("") { it.classFileName }})${returnDescriptor.classFileName}"),
+    Tree by branches(parameterDescriptors, returnDescriptor) {
+    companion object {
+        fun fromDescriptorString(descriptor: String) = methodDescriptorFromDescriptorString(descriptor)
+    }
+    override fun toString() = "(${parameterDescriptors.joinToString(", ")}): $returnDescriptor"
+}
+
 
 sealed class ReturnDescriptor(classFileName: String) : Descriptor(classFileName) {
     object Void : ReturnDescriptor("V"), Leaf {
@@ -19,7 +30,9 @@ sealed class ReturnDescriptor(classFileName: String) : Descriptor(classFileName)
 }
 
 sealed class FieldType(classFileName: String) : ReturnDescriptor(classFileName) {
-    companion object
+    companion object {
+        fun fromDescriptorString(descriptor: String) = jvmTypeFromDescriptorString(descriptor)
+    }
 
 }
 
@@ -63,16 +76,7 @@ data class ObjectType(val fullClassName: QualifiedName) :
     override fun toString() = fullClassName.shortName.toDotQualifiedString()
 
     constructor(qualifiedName: String, dotQualified: Boolean) : this(qualifiedName.toQualifiedName(dotQualified))
-
-//    companion object {
-//        fun dotQualified(className: String) = ObjectType(className.replace(".", "/"))
-//    }
 }
-
-//fun ObjectType.packageName() = className.substring(0, className.lastIndexOf("/").let { if (it == -1) 0 else it })
-//    .replace("/", ".")
-//
-//fun ObjectType.simpleName() = className.substring(className.lastIndexOf("/").let { if (it == -1) 0 else it + 1 })
 
 data class ArrayType(val componentType: FieldType) : FieldType("[" + componentType.classFileName),
     Tree by branch(componentType) {
@@ -81,11 +85,3 @@ data class ArrayType(val componentType: FieldType) : FieldType("[" + componentTy
 
 typealias ParameterDescriptor = FieldType
 
-data class MethodDescriptor internal constructor(
-    val parameterDescriptors: List<ParameterDescriptor>,
-    val returnDescriptor: ReturnDescriptor
-) : Descriptor("(${parameterDescriptors.joinToString("") { it.classFileName }})${returnDescriptor.classFileName}"),
-    Tree by branches(parameterDescriptors, returnDescriptor) {
-    companion object;
-    override fun toString() = "(${parameterDescriptors.joinToString(", ")}): $returnDescriptor"
-}

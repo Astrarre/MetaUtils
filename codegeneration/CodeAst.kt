@@ -2,9 +2,9 @@ package metautils.codegeneration
 
 import metautils.api.AnyJavaType
 import metautils.api.JavaClassType
-import metautils.descriptor.JvmType
-import metautils.descriptor.ObjectType
-import metautils.descriptor.ReturnDescriptor
+import metautils.types.jvm.JvmType
+import metautils.types.jvm.ObjectType
+import metautils.types.jvm.ReturnDescriptor
 
 sealed class Code {
     override fun toString(): String {
@@ -49,13 +49,13 @@ sealed class MethodCall(val parameters: List<Pair<JvmType, Expression>>) : Expre
     abstract val receiver: Receiver?
 
     class Method(
-            override val receiver: Receiver?,
-            val name: String,
-            parameters: List<Pair<JvmType, Expression>>,
-            val methodAccess: MethodAccess,
-            val receiverAccess: ClassAccess,
-            val returnType: ReturnDescriptor,
-            val owner: ObjectType
+        override val receiver: Receiver?,
+        val name: String,
+        parameters: List<Pair<JvmType, Expression>>,
+        val methodAccess: MethodAccess,
+        val receiverAccess: ClassAccess,
+        val returnType: ReturnDescriptor,
+        val owner: ObjectType
 //        , val dontDoVirtualDispatch: Boolean
     ) : MethodCall(parameters)
 

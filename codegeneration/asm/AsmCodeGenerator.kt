@@ -5,7 +5,6 @@ import metautils.api.JavaReturnType
 import metautils.api.JavaType
 import codegeneration.*
 import metautils.codegeneration.*
-import metautils.descriptor.*
 import metautils.signature.*
 import metautils.util.*
 import org.objectweb.asm.Opcodes
@@ -14,6 +13,7 @@ import metautils.signature.JavaLangObjectGenericType
 import metautils.signature.VoidJavaType
 import metautils.signature.getContainedClassesRecursively
 import metautils.signature.toJvmType
+import metautils.types.jvm.*
 import java.nio.file.Path
 
 

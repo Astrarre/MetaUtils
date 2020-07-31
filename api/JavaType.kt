@@ -1,9 +1,8 @@
 package metautils.api
 
-import metautils.descriptor.FieldType
-import metautils.descriptor.JvmType
-import metautils.descriptor.ObjectType
-import metautils.descriptor.read
+import metautils.types.jvm.FieldType
+import metautils.types.jvm.JvmType
+import metautils.types.jvm.ObjectType
 import metautils.signature.*
 import metautils.util.*
 import org.objectweb.asm.tree.AnnotationNode
@@ -14,6 +13,9 @@ import org.objectweb.asm.tree.AnnotationNode
 // don't know how to decompile them, so it's fine to omit them here
 data class JavaType<out T : GenericReturnType>(val type: T, val annotations: List<JavaAnnotation>) :
     Tree by branches(annotations, type) {
+    companion object {
+        fun fromRawClassName(name: String) = ClassGenericType.fromRawClassString(name).noAnnotations()
+    }
     override fun toString(): String = annotations.joinToString("") { "$it " } + type
 }
 typealias JavaClassType = JavaType<ClassGenericType>
@@ -27,7 +29,7 @@ data class JavaAnnotation private constructor(val type: ObjectType, val paramete
     override fun toString(): String = "@$type"
     companion object {
         fun fromAsmNode(node: AnnotationNode) =
-            JavaAnnotation(FieldType.read(node.desc) as ObjectType, parseRawAnnotationValues(node.values))
+            JavaAnnotation(FieldType.fromDescriptorString(node.desc) as ObjectType, parseRawAnnotationValues(node.values))
         fun fromRawJvmClassName(name: String) =
             JavaAnnotation(ObjectType(name, dotQualified = false), parameters = mapOf())
 
@@ -78,14 +80,14 @@ private fun parseAnnotationValue(value: Any): AnnotationValue = when (value) {
     is Boolean -> AnnotationValue.Primitive.Bool(value)
     is Char -> AnnotationValue.Primitive.Cha(value)
     is String -> AnnotationValue.Primitive.Str(value)
-    is org.objectweb.asm.Type -> AnnotationValue.ClassType(JvmType.read(value.descriptor))
+    is org.objectweb.asm.Type -> AnnotationValue.ClassType(JvmType.fromDescriptorString(value.descriptor))
     is Array<*> -> {
         assert(value.size == 2)
         assert(value[0] is String)
         @Suppress("UNCHECKED_CAST")
         value as Array<String>
 
-        val type = JvmType.read(value[0]) as ObjectType
+        val type = JvmType.fromDescriptorString(value[0]) as ObjectType
         AnnotationValue.Enum(type = type, constant = value[1])
     }
     is AnnotationNode -> AnnotationValue.Annotation(JavaAnnotation.fromAsmNode(value))

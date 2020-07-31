@@ -2,11 +2,11 @@ package metautils.codegeneration.asm
 
 import codegeneration.*
 import metautils.codegeneration.*
-import metautils.descriptor.*
 import metautils.util.*
 import org.objectweb.asm.Opcodes
 import metautils.signature.outerClass
 import metautils.signature.toJvmType
+import metautils.types.jvm.*
 
 private const val printStackOps = false
 
@@ -202,15 +202,15 @@ internal class AsmGeneratedMethod(
     }
 
     private fun invoke(
-            opcode: Int,
-            methodName: String,
-            parameterTypes: List<JvmType>,
-            parametersToLoad: List<Receiver>,
+        opcode: Int,
+        methodName: String,
+        parameterTypes: List<JvmType>,
+        parametersToLoad: List<Receiver>,
         // This is needed just for checks, we don't actually need this information technically
-            parametersThatWillBePopped: List<JvmType>,
-            returnType: ReturnDescriptor,
-            owner: ObjectType,
-            isInterface: Boolean/*,
+        parametersThatWillBePopped: List<JvmType>,
+        returnType: ReturnDescriptor,
+        owner: ObjectType,
+        isInterface: Boolean/*,
         parametersAlreadyLoaded: List<JvmType> = listOf()*/
     ) {
         parametersToLoad.forEach { it.addOpcodes() }

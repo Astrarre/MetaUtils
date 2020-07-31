@@ -1,6 +1,6 @@
 package metautils.signature
 
-import metautils.descriptor.JvmPrimitiveType
+import metautils.types.jvm.JvmPrimitiveType
 import metautils.util.*
 
 

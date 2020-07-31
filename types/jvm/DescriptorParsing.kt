@@ -1,10 +1,14 @@
-package metautils.descriptor
+package metautils.types.jvm
 
+import metautils.types.internal.jvmPrimitiveStringToTypeChar
+import metautils.types.internal.jvmPrimitiveStringToType
 
-fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
-    baseTypesMap[descriptor]?.let { return it }
+//TODO: keep going for other classes if we split this up into a seperate lib
+
+internal fun jvmTypeFromDescriptorString(descriptor: String): FieldDescriptor {
+    jvmPrimitiveStringToType[descriptor]?.let { return it }
     require(descriptor.isNotEmpty()) { "A descriptor cannot be an empty string" }
-    if (descriptor[0] == '[') return ArrayType(read(descriptor.substring(1)))
+    if (descriptor[0] == '[') return ArrayType(jvmTypeFromDescriptorString(descriptor.substring(1)))
     require(descriptor[0] == 'L' && descriptor.last() == ';')
     { "'$descriptor' is not a descriptor: A field descriptor must be primitive, an array ([), or a class (L)" }
 
@@ -12,24 +16,12 @@ fun FieldType.Companion.read(descriptor: String): FieldDescriptor {
     return ObjectType(descriptor.substring(1, descriptor.length - 1), dotQualified = false)
 }
 
-internal val baseTypesMap = mapOf(
-    JvmPrimitiveType.Byte.classFileName to JvmPrimitiveType.Byte,
-    JvmPrimitiveType.Char.classFileName to JvmPrimitiveType.Char,
-    JvmPrimitiveType.Double.classFileName to JvmPrimitiveType.Double,
-    JvmPrimitiveType.Float.classFileName to JvmPrimitiveType.Float,
-    JvmPrimitiveType.Int.classFileName to JvmPrimitiveType.Int,
-    JvmPrimitiveType.Long.classFileName to JvmPrimitiveType.Long,
-    JvmPrimitiveType.Short.classFileName to JvmPrimitiveType.Short,
-    JvmPrimitiveType.Boolean.classFileName to JvmPrimitiveType.Boolean
-)
 
-internal val baseTypesCharMap = baseTypesMap.mapKeys { it.key[0] }
-
-fun MethodDescriptor.Companion.read(descriptor: String): MethodDescriptor {
+internal fun methodDescriptorFromDescriptorString(descriptor: String): MethodDescriptor {
     require(descriptor[0] == '(') { "A method descriptor must begin with a '('" }
     val parameterDescriptors = mutableListOf<FieldType>()
     var parameterStartPos = 1
-    var endPos: kotlin.Int? = null
+    var endPos: Int? = null
     var inClassName = false
     for (i in 1 until descriptor.length) {
         val c = descriptor[i]
@@ -42,13 +34,13 @@ fun MethodDescriptor.Companion.read(descriptor: String): MethodDescriptor {
                 inClassName = false
             }
         } else {
-            if (baseTypesCharMap[c] != null) descriptorTerminated = true
+            if (jvmPrimitiveStringToTypeChar[c] != null) descriptorTerminated = true
         }
 
         if (c == 'L') inClassName = true
 
         if (descriptorTerminated) {
-            parameterDescriptors.add(FieldDescriptor.read(descriptor.substring(parameterStartPos, i + 1)))
+            parameterDescriptors.add(FieldDescriptor.fromDescriptorString(descriptor.substring(parameterStartPos, i + 1)))
             parameterStartPos = i + 1
         }
 
@@ -64,7 +56,7 @@ fun MethodDescriptor.Companion.read(descriptor: String): MethodDescriptor {
     require(endPos < descriptor.length - 1) { "A method descriptor must have a return type" }
     val returnDescriptorString = descriptor.substring(endPos + 1, descriptor.length)
     val returnDescriptor = if (returnDescriptorString == ReturnDescriptor.Void.classFileName) ReturnDescriptor.Void
-    else FieldDescriptor.read(returnDescriptorString)
+    else FieldDescriptor.fromDescriptorString(returnDescriptorString)
 
     return MethodDescriptor(parameterDescriptors, returnDescriptor)
 

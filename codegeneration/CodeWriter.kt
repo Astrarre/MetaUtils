@@ -4,10 +4,10 @@ import com.squareup.javapoet.*
 import metautils.api.AnnotationValue
 import metautils.api.JavaAnnotation
 import metautils.api.JavaType
-import metautils.descriptor.ArrayType
-import metautils.descriptor.JvmPrimitiveType
-import metautils.descriptor.JvmType
-import metautils.descriptor.ObjectType
+import metautils.types.jvm.ArrayType
+import metautils.types.jvm.JvmPrimitiveType
+import metautils.types.jvm.JvmType
+import metautils.types.jvm.ObjectType
 import metautils.signature.*
 import metautils.util.applyIf
 import metautils.util.prependIfNotNull

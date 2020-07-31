@@ -6,7 +6,7 @@ import metautils.api.AnyJavaType
 import metautils.api.JavaAnnotation
 import metautils.api.JavaClassType
 import metautils.api.JavaType
-import metautils.descriptor.*
+import metautils.types.jvm.*
 import metautils.util.PackageName
 import metautils.util.QualifiedName
 import metautils.util.ShortClassName

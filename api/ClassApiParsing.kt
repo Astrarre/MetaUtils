@@ -8,7 +8,6 @@ import metautils.codegeneration.MethodAccess
 import metautils.codegeneration.Visibility
 import kotlinx.coroutines.runBlocking
 import metautils.asm.*
-import metautils.descriptor.*
 import metautils.signature.*
 import org.objectweb.asm.tree.AnnotationNode
 import org.objectweb.asm.tree.FieldNode
@@ -16,6 +15,10 @@ import org.objectweb.asm.tree.MethodNode
 import metautils.signature.fromRawClassString
 import metautils.signature.noAnnotations
 import metautils.signature.toRawGenericType
+import metautils.types.jvm.JavaLangObjectString
+import metautils.types.jvm.MethodDescriptor
+import metautils.types.jvm.ParameterDescriptor
+import metautils.types.jvm.fromDescriptorString
 import metautils.util.*
 import java.nio.file.Path
 
@@ -257,7 +260,7 @@ private fun readMethod(
     classTypeArgs: TypeArgDecls
 ): ClassApi.Method {
     val signature = if (method.signature != null) MethodSignature.readFrom(method.signature, classTypeArgs) else {
-        val descriptor = MethodDescriptor.read(method.desc)
+        val descriptor = MethodDescriptor.fromDescriptorString(method.desc)
         val parameters = getNonGeneratedParameterDescriptors(descriptor, method)
         MethodSignature(
             typeArguments = null, parameterTypes = parameters.map { it.toRawGenericType() },

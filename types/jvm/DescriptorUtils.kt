@@ -1,6 +1,5 @@
-package metautils.descriptor
+package metautils.types.jvm
 
-import metautils.descriptor.*
 import metautils.util.QualifiedName
 import metautils.util.toQualifiedName
 

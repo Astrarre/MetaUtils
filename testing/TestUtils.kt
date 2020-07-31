@@ -9,24 +9,28 @@ import java.nio.file.FileSystems
 import java.nio.file.Path
 import java.nio.file.Paths
 
-@PublishedApi internal class DummyClass
+@PublishedApi
+internal class DummyClass
 
 
- fun <T> getResources(path1: String, path2: String, usage: (Path, Path) -> T) :T {
-     return getResource(path1) { r1 ->
-        getResource(path2) { r2 ->
+fun <T> getResources(path1: String, path2: String, usage: (Path, Path) -> T): T {
+    getResource(path1) { r1 ->
+//        return null!!
+          return getResource(path2) { r2 ->
              usage(r1, r2)
         }
     }
 }
 
- fun <T> getResource(path: String, usage: (Path) -> T): T {
+inline fun <T> getResource(path: String, usage: (Path) -> T): T {
+//    return null!!
     val classLoader = DummyClass::class.java.classLoader
     val uri = classLoader.getResource("dummyResource")!!.toURI()
     return uri.open { usage(Paths.get(uri).resolveSpecificResource(path)) }
 }
 
-@PublishedApi internal inline fun <T> URI.open(usage: (URI) -> T): T {
+@PublishedApi
+internal inline fun <T> URI.open(usage: (URI) -> T): T {
     return try {
         if (scheme == "jar") FileSystems.newFileSystem(this, mapOf("create" to true)).use {
             usage(this)
@@ -36,10 +40,11 @@ import java.nio.file.Paths
     }
 }
 
-@PublishedApi internal fun Path.resolveSpecificResource(path: String) = parent.resolve(path).also {
+@PublishedApi
+internal fun Path.resolveSpecificResource(path: String) = parent.resolve(path).also {
     check(it.exists()) {
         "Resource '$this' at $it does not exist. Other resources in resources directory ${it.parent}: " + it.parent.directChildren()
-            .toList()
+                .toList()
     }
 }
 
@@ -48,8 +53,8 @@ fun verifyClassFiles(dir: Path, classpath: List<Path>) {
     require(dir.isDirectory())
 
     URLClassLoader(
-        arrayOf(dir.toUri().toURL()) + classpath.map { it.toUri().toURL() }
-        /* , this::class.java.classLoader*/
+            arrayOf(dir.toUri().toURL()) + classpath.map { it.toUri().toURL() }
+            /* , this::class.java.classLoader*/
     ).use { classLoader ->
         dir.recursiveChildren().forEach {
             if (!it.isClassfile()) return@forEach

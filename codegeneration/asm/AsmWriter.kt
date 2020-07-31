@@ -5,8 +5,11 @@ import metautils.api.AnnotationValue
 import metautils.asm.AnnotateableVisitor
 import metautils.asm.annotateable
 import metautils.codegeneration.*
-import metautils.descriptor.*
 import metautils.signature.*
+import metautils.types.jvm.JvmType
+import metautils.types.jvm.MethodDescriptor
+import metautils.types.jvm.ObjectType
+import metautils.types.jvm.toJvmString
 import metautils.util.*
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
@@ -101,10 +104,10 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
     }
 
     inline fun writeClass(
-            access: ClassAccess, visibility: Visibility, className: QualifiedName, sourceFile: String,
-            signature: ClassSignature?, superClass: ObjectType, superInterfaces: List<ObjectType>,
-            annotations: List<JavaAnnotation>,
-            init: ClassBody.() -> Unit
+        access: ClassAccess, visibility: Visibility, className: QualifiedName, sourceFile: String,
+        signature: ClassSignature?, superClass: ObjectType, superInterfaces: List<ObjectType>,
+        annotations: List<JavaAnnotation>,
+        init: ClassBody.() -> Unit
     ) {
         className.track()
         signature?.visitNames { it.track() }
@@ -144,15 +147,15 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
     inner class ClassBody {
         fun trackInnerClass(name: QualifiedName) = name.track()
         fun writeMethod(
-                name: String,
-                access: MethodAccess,
-                descriptor: MethodDescriptor,
-                parameterNames: List<String>,
-                signature: MethodSignature?,
-                annotations: List<JavaAnnotation>,
-                parameterAnnotations: Map<Int, List<JavaAnnotation>>,
-                throws: List<JvmType>,
-                init: MethodBody.() -> Unit
+            name: String,
+            access: MethodAccess,
+            descriptor: MethodDescriptor,
+            parameterNames: List<String>,
+            signature: MethodSignature?,
+            annotations: List<JavaAnnotation>,
+            parameterAnnotations: Map<Int, List<JavaAnnotation>>,
+            throws: List<JvmType>,
+            init: MethodBody.() -> Unit
         ) {
 
             descriptor.visitNames { it.track() }
@@ -189,8 +192,8 @@ internal class AsmClassWriter(private val index: ClasspathIndex) {
         }
 
         fun writeField(
-                name: String, type: JvmType, signature: FieldSignature?, visibility: Visibility, isStatic: Boolean,
-                isFinal: Boolean, annotations: List<JavaAnnotation>
+            name: String, type: JvmType, signature: FieldSignature?, visibility: Visibility, isStatic: Boolean,
+            isFinal: Boolean, annotations: List<JavaAnnotation>
         ) {
             type.track()
             signature?.visitNames { it.track() }
